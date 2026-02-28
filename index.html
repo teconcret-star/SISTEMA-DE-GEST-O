@@ -676,6 +676,8 @@
           `;
           tbody.appendChild(tr);
         });
+        // Atualiza também o saldo total sempre que a lista de pedidos muda
+        calcularSaldo();
       }
       document.getElementById('btnPedido').onclick = function(){
         const clienteIdx = document.getElementById('pedidoCliente').value;
@@ -693,8 +695,12 @@
         pedidos.push({ clienteIdx: Number(clienteIdx), kg, precoKg, custo, vencimento: vencStr });
         salvarLS('pedidos', pedidos);
         atualizarPedidos();
-        const c = clientes[clienteIdx];
-        registrarFinanceiro(c ? c.nome : "", custo, 'saida', true, vencStr);
+
+        // IMPORTANTE: Não registrar automaticamente como 'saida' financeiro.
+        // O saldo final agora será calculado como:
+        // saldo = soma dos custos dos pedidos (sempre positivos) + soma do financeiro (entradas +, saídas -)
+        // Se você quer um registro financeiro relacionado ao pedido, faça manualmente pelo formulário financeiro.
+
         // reset form
         document.getElementById('pedidoCliente').selectedIndex = 0;
         document.getElementById('pedidoKg').value = "";
@@ -770,14 +776,31 @@
         atualizarFinanceiro();
         calcularSaldo();
       }
+
+      // ---- ATUALIZE ESTA FUNÇÃO ----
+      // O saldo final é agora:
+      // saldo = soma dos custos dos pedidos (sempre positivos) + soma do financeiro (entradas +, saídas -)
       function calcularSaldo(){
-        let saldo = 0;
-        financeiro.forEach(mov => {
-          if(mov.tipo === "entrada") saldo += mov.valor;
-          else saldo -= mov.valor;
+        // Soma dos pedidos (CADA pedido é um valor positivo, ou seja, vendas aumentam o saldo)
+        let saldoPedidos = 0;
+        pedidos.forEach(p => {
+          const custo = Number(p && p.custo ? p.custo : 0) || 0;
+          if(custo > 0) saldoPedidos += custo;
         });
-        document.getElementById('saldoAtual').value = "R$ " + saldo.toFixed(2);
+
+        // Soma do financeiro (entradas +, saídas -)
+        let saldoFinanceiro = 0;
+        financeiro.forEach(mov => {
+          const valor = Number(mov && mov.valor ? mov.valor : 0) || 0;
+          if(String(mov.tipo).toLowerCase() === "entrada") saldoFinanceiro += valor;
+          else if(String(mov.tipo).toLowerCase() === "saida") saldoFinanceiro -= valor;
+        });
+
+        const saldoFinal = saldoPedidos + saldoFinanceiro;
+        document.getElementById('saldoAtual').value = "R$ " + saldoFinal.toFixed(2);
       }
+      // ---- FIM DA ATUALIZAÇÃO ----
+
       atualizarFinanceiro();
       calcularSaldo();
 
@@ -1054,6 +1077,7 @@
           pedidos[index] = obj;
           salvarLS('pedidos', pedidos);
           atualizarPedidos();
+          // calcularSaldo será chamado dentro de atualizarPedidos()
         } else if(arrayName === 'financeiro'){
           const obj = financeiro[index] || {};
           if(updated.tipo !== undefined) obj.tipo = String(updated.tipo).trim();
