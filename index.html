@@ -2,159 +2,196 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Controle de Pedidos, Clientes, Estoque e Matéria Prima</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedidos, Clientes, Estoque</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2196F3">
+  <!-- Ícones Materialize + Google Font Roboto para app-like -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.19.3/xlsx.full.min.js"></script>
   <style>
-    .card-action { padding: 0 16px 16px 16px; }
+    body { font-family: 'Roboto', Arial, sans-serif; background: #f3f3f3; }
+    nav { box-shadow: 0px 2px 8px #455a6460;}
+    .brand-logo { font-weight:500; }
+    .container { max-width:500px; width:98vw; margin:auto; }
+    @media (max-width:600px) {
+      .container { width:100vw; padding:0; }
+      th, td { font-size:0.95em;}
+      form .row .input-field { margin-bottom:6px;}
+      .nav-wrapper{padding:0 4px;}
+    }
     .card-content { min-height: 120px; }
+    .card-action { padding: 0 16px 16px 16px; }
+    .floating-action-btn { position:fixed; bottom:16px; right:16px; z-index:99; }
+    .section-h { margin:24px 3px 16px 3px; font-size:1.18em; font-weight:500; }
+    .scroll-table { overflow-x:auto; }
+    .input-field input[type="text"]:not(.browser-default):focus, .input-field input[type="email"]:focus, .input-field input[type="number"]:focus {border-bottom:2px solid #2196f3; box-shadow:0 1px 0 0 #1976d2;}    
   </style>
 </head>
 <body class="grey lighten-5">
+
   <nav class="blue">
     <div class="nav-wrapper">
-      <a href="#" class="brand-logo center">Pedidos, Clientes & Estoque</a>
+      <span class="material-icons left" style="margin-left:8px;margin-top:15px;">store</span>
+      <a href="#" class="brand-logo center">Pedidos & Estoque</a>
     </div>
   </nav>
+
   <div class="container">
 
-    <div class="right" style="margin-top:10px;">
-      <button id="btnExportExcel" class="btn green">Exportar Excel</button>
-    </div>
-
-    <!-- Cadastro de Cliente -->
-    <h5 class="blue-text text-darken-3" style="margin-top: 45px;">Cadastro de Cliente</h5>
-    <form id="formCliente" class="card-panel">
+    <div class="section-h">Cadastro de Cliente</div>
+    <form id="formCliente" class="card-panel z-depth-1">
       <div class="row">
-        <div class="input-field col s3">
+        <div class="input-field col s12 m6">
           <input id="clienteNome" type="text" required>
           <label for="clienteNome">Nome Completo</label>
         </div>
-        <div class="input-field col s2">
+        <div class="input-field col s6 m3">
           <select id="clienteDocTipo">
             <option value="cpf">CPF</option>
             <option value="cnpj">CNPJ</option>
           </select>
-          <label for="clienteDocTipo">Tipo de Documento</label>
+          <label for="clienteDocTipo">Tipo de Doc</label>
         </div>
-        <div class="input-field col s2">
+        <div class="input-field col s6 m3">
           <input id="clienteDoc" type="text" required>
-          <label for="clienteDoc">CPF ou CNPJ</label>
+          <label for="clienteDoc">CPF/CNPJ</label>
         </div>
-        <div class="input-field col s2">
+      </div>
+      <div class="row">
+        <div class="input-field col s4">
           <input id="clienteTel" type="text">
           <label for="clienteTel">Telefone</label>
         </div>
-        <div class="input-field col s3">
+        <div class="input-field col s8">
           <input id="clienteEmail" type="email">
           <label for="clienteEmail">E-mail</label>
         </div>
       </div>
       <div class="row">
-        <div class="input-field col s2">
+        <div class="input-field col s4">
           <input id="clienteCEP" type="text" maxlength="9">
           <label for="clienteCEP">CEP</label>
         </div>
-        <div class="input-field col s2">
-          <button class="btn orange" type="button" id="buscarCEP">Buscar</button>
-        </div>
         <div class="input-field col s4">
-          <input id="clienteEnd" type="text">
-          <label for="clienteEnd">Endereço</label>
-        </div>
-        <div class="input-field col s2">
           <input id="clienteNum" type="text">
           <label for="clienteNum">Número</label>
         </div>
-        <div class="input-field col s2">
+        <div class="input-field col s4">
           <input id="clienteComp" type="text">
           <label for="clienteComp">Complemento</label>
         </div>
       </div>
-      <button class="btn blue" type="submit">Cadastrar/Atualizar Cliente</button>
+      <div class="row">
+        <div class="input-field col s8">
+          <input id="clienteEnd" type="text">
+          <label for="clienteEnd">Endereço</label>
+        </div>
+        <div class="input-field col s4">
+          <button class="btn orange" type="button" id="buscarCEP" style="margin-top:16px;width:100%">
+            <span class="material-icons left">search</span>
+            Buscar CEP
+          </button>
+        </div>
+      </div>
+      <button class="btn blue" type="submit" style="width:100%;margin-top:10px;">
+        <span class="material-icons left">person_add</span>
+        Salvar Cliente
+      </button>
     </form>
 
-    <h6>Clientes Cadastrados</h6>
-    <table class="highlight responsive-table" id="clientesTable">
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Tipo Doc</th>
-          <th>CPF/CNPJ</th>
-          <th>Telefone</th>
-          <th>Email</th>
-          <th>CEP</th>
-          <th>Endereço</th>
-          <th>Número</th>
-          <th>Compl.</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="section-h">Clientes Cadastrados</div>
+    <div class="scroll-table">
+      <table class="highlight responsive-table" id="clientesTable">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Tipo</th>
+            <th>CPF/CNPJ</th>
+            <th>Tel</th>
+            <th>Email</th>
+            <th>CEP</th>
+            <th>Endereço</th>
+            <th>Nº</th>
+            <th>Compl.</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
-    <!-- Cadastro/Edição de Matéria Prima -->
-    <h5 class="blue-text text-darken-3" style="margin-top:35px;">Cadastro/Edição de Matéria Prima</h5>
-    <form id="formCadastroMP" class="card-panel">
+    <div class="section-h">Cadastro/Edição de MP</div>
+    <form id="formCadastroMP" class="card-panel z-depth-1">
       <input type="hidden" id="mpEditIdx" value="-1">
       <div class="row">
-        <div class="input-field col s3">
+        <div class="input-field col s4">
           <input id="mpTipo" type="text" required>
           <label for="mpTipo">Tipo</label>
         </div>
-        <div class="input-field col s3">
+        <div class="input-field col s4">
           <input id="mpQtd" type="number" min="0" required>
-          <label for="mpQtd">Quantidade</label>
+          <label for="mpQtd">Qtd</label>
         </div>
-        <div class="input-field col s3">
+        <div class="input-field col s4">
           <input id="mpPreco" type="number" min="0.01" step="0.01" required>
           <label for="mpPreco">Preço</label>
         </div>
-        <div class="input-field col s3">
+      </div>
+      <div class="row">
+        <div class="input-field col s8">
           <select id="mpUnidade">
-            <option value="kg" selected>Custo por kg</option>
-            <option value="unidade">Custo por unidade</option>
+            <option value="kg" selected>Custo/kg</option>
+            <option value="unidade">Custo/unidade</option>
           </select>
-          <label for="mpUnidade">Tipo de cálculo</label>
+          <label for="mpUnidade">Tipo</label>
+        </div>
+        <div class="input-field col s4">
+          <button class="btn green" type="submit" id="btnSalvarMP" style="width:100%">
+            <span class="material-icons left">save</span>
+            Salvar MP
+          </button>
+          <button type="button" id="btnCancelarEditMP" class="btn orange" style="display:none;margin-left:8px;">
+            <span class="material-icons left">close</span> Cancelar
+          </button>
         </div>
       </div>
-      <button class="btn green" type="submit" id="btnSalvarMP">Salvar MP</button>
-      <button type="button" id="btnCancelarEditMP" class="btn orange" style="display:none;margin-left:8px;">Cancelar Edição</button>
     </form>
 
-    <h6>Minhas Matérias-Primas</h6>
+    <div class="section-h">Minhas MPs</div>
     <div id="mpCards" class="row" style="margin-bottom: 18px;"></div>
 
-    <h6>Matérias-Primas Cadastradas</h6>
-    <table class="highlight responsive-table" id="mpTable">
-      <thead>
-        <tr>
-          <th>Tipo</th>
-          <th>Saldo</th>
-          <th>Preço</th>
-          <th>Tipo</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="section-h">MPs Tabela</div>
+    <div class="scroll-table">
+      <table class="highlight responsive-table" id="mpTable">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Saldo</th>
+            <th>Preço</th>
+            <th>Tipo</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
-    <!-- Movimentar Matéria Prima -->
-    <h5 class="blue-text text-darken-3" style="margin-top:35px;">Movimentar Matéria Prima</h5>
-    <form class="card-panel">
+    <div class="section-h">Movimentar MP</div>
+    <form class="card-panel z-depth-1">
       <div class="row">
-        <div class="input-field col s6">
+        <div class="input-field col s5">
           <select id="nomeMP">
-            <option value="" disabled selected>Escolha a Matéria Prima</option>
+            <option value="" disabled selected>Escolha a MP</option>
           </select>
-          <label for="nomeMP">Matéria Prima</label>
+          <label for="nomeMP">MP</label>
         </div>
         <div class="input-field col s3">
           <input id="qtdMP" type="number" min="1">
           <label id="qtdMPLab" for="qtdMP">Quantidade</label>
         </div>
-        <div class="input-field col s3">
+        <div class="input-field col s4">
           <select id="opMP">
             <option value="entrada">Entrada</option>
             <option value="saida">Saída</option>
@@ -162,89 +199,95 @@
           <label for="opMP">Operação</label>
         </div>
       </div>
-      <button class="btn blue" type="button" id="btnMP">Registrar</button>
+      <button class="btn blue" type="button" id="btnMP" style="width:100%">Movimentar</button>
     </form>
 
+    <div class="section-h">Saldo MP</div>
     <div id="mpSaldo" class="row" style="margin-bottom: 12px;"></div>
 
-    <h6>Estoque Atual</h6>
-    <table class="highlight responsive-table" id="estoqueTable">
-      <thead>
-        <tr>
-          <th>Matéria Prima</th>
-          <th>Saldo</th>
-          <th>Preço</th>
-          <th>Tipo</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="section-h">Estoque Atual</div>
+    <div class="scroll-table">
+      <table class="highlight responsive-table" id="estoqueTable">
+        <thead>
+          <tr>
+            <th>MP</th>
+            <th>Saldo</th>
+            <th>Preço</th>
+            <th>Tipo</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
-    <!-- Novo Pedido -->
-    <h5 class="blue-text text-darken-3" style="margin-top:35px;">Novo Pedido</h5>
-    <form class="card-panel">
+    <div class="section-h">Novo Pedido</div>
+    <form class="card-panel z-depth-1">
       <div class="row">
-        <div class="input-field col s4">
+        <div class="input-field col s6">
           <select id="pedidoCliente">
-            <option value="" disabled selected>Selecione o cliente</option>
+            <option value="" disabled selected>Selecione</option>
           </select>
           <label for="pedidoCliente">Cliente</label>
         </div>
-        <div class="input-field col s2">
+        <div class="input-field col s6">
           <input id="pedidoKg" type="number" min="0.01" step="0.01">
-          <label for="pedidoKg">Quantidade (kg)</label>
+          <label for="pedidoKg">Qtd (kg)</label>
         </div>
-        <div class="input-field col s2">
+      </div>
+      <div class="row">
+        <div class="input-field col s5">
           <input id="pedidoPrecoKg" type="number" min="0.01" step="0.01">
           <label for="pedidoPrecoKg">Preço/kg (R$)</label>
         </div>
-        <div class="input-field col s2">
+        <div class="input-field col s5">
           <input id="pedidoCusto" type="number" readonly>
           <label for="pedidoCusto">Custo Final (R$)</label>
         </div>
         <div class="input-field col s2">
           <select id="pedidoVenc">
             <option value="" disabled selected>Vencimento</option>
-            <option value="7">7 dias</option>
-            <option value="14">14 dias</option>
-            <option value="21">21 dias</option>
-            <option value="28">28 dias</option>
+            <option value="7">7d</option>
+            <option value="14">14d</option>
+            <option value="21">21d</option>
+            <option value="28">28d</option>
           </select>
-          <label for="pedidoVenc">Vencimento</label>
+          <label for="pedidoVenc">Venc.</label>
         </div>
       </div>
-      <button class="btn blue" type="button" id="btnPedido">Registrar Pedido</button>
+      <button class="btn blue" type="button" id="btnPedido" style="width:100%;margin-top:8px;">Registrar Pedido</button>
     </form>
 
-    <h6>Lista de Pedidos</h6>
-    <table class="highlight responsive-table" id="pedidosTable">
-      <thead>
-        <tr>
-          <th>Cliente</th>
-          <th>CPF/CNPJ</th>
-          <th>Kgs</th>
-          <th>Preço/kg</th>
-          <th>Custo</th>
-          <th>Vencimento</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="section-h">Pedidos</div>
+    <div class="scroll-table">
+      <table class="highlight responsive-table" id="pedidosTable">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>CPF/CNPJ</th>
+            <th>Kgs</th>
+            <th>Preço/kg</th>
+            <th>Custo</th>
+            <th>Vencimento</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
-    <h5 class="blue-text text-darken-3" style="margin-top:35px;">Entradas/Saídas Financeiras</h5>
-    <form class="card-panel">
+    <div class="section-h">Financeiro</div>
+    <form class="card-panel z-depth-1">
       <div class="row">
-        <div class="input-field col s4">
+        <div class="input-field col s6">
           <input id="finDesc" type="text">
           <label for="finDesc">Descrição</label>
         </div>
-        <div class="input-field col s4">
+        <div class="input-field col s3">
           <input id="finValor" type="number" step="0.01">
           <label for="finValor">Valor (R$)</label>
         </div>
-        <div class="input-field col s4">
+        <div class="input-field col s3">
           <select id="finTipo">
             <option value="entrada">Entrada</option>
             <option value="saida">Saída</option>
@@ -252,39 +295,49 @@
           <label for="finTipo">Tipo</label>
         </div>
       </div>
-      <button class="btn blue" type="button" id="btnFinanceiro">Registrar</button>
+      <button class="btn blue" type="button" id="btnFinanceiro" style="width:100%">Registrar Movimentação</button>
     </form>
 
-    <h6>Histórico Financeiro</h6>
-    <table class="highlight responsive-table" id="financeiroTable">
-      <thead>
-        <tr>
-          <th>Tipo</th>
-          <th>Descrição</th>
-          <th>Valor (R$)</th>
-          <th>Vencimento</th>
-          <th>Avisos</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="section-h">Financeiro Histórico</div>
+    <div class="scroll-table">
+      <table class="highlight responsive-table" id="financeiroTable">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Descrição</th>
+            <th>Valor (R$)</th>
+            <th>Vencimento</th>
+            <th>Avisos</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="section-h">Saldo Atual</div>
+    <div style="margin-bottom:32px;">
+      <input id="saldoAtual" readonly class="input-field center" style="width:120px;font-weight:bold;text-align:center">
+    </div>
+  </div>
 
-    <h6>Saldo Atual</h6>
-    <input id="saldoAtual" readonly class="input-field center" style="width:120px;font-weight:bold;">
+  <div class="floating-action-btn">
+    <button id="btnExportExcel" class="btn-floating btn-large green tooltipped" data-position="left" data-tooltip="Exportar Excel">
+      <span class="material-icons">file_download</span>
+    </button>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       M.FormSelect.init(document.querySelectorAll('select'));
+      M.Tooltip.init(document.querySelectorAll('.tooltipped'));
       function salvarLS(key, obj) { localStorage.setItem(key, JSON.stringify(obj)); }
       function lerLS(key, defaultVal) {
         let res = localStorage.getItem(key);
         return res ? JSON.parse(res) : defaultVal;
       }
 
-      // ---------- CLIENTES ----------
+      // Cadastro Clientes
       let clientes = lerLS('clientes', []);
       let editClienteIndex = null;
       function atualizarClientes() {
@@ -305,8 +358,8 @@
             <td>${c.numero || ""}</td>
             <td>${c.complemento || ""}</td>
             <td>
-              <button class="btn-small orange" onclick="editarCliente(${i})">Editar</button>
-              <button class="btn-small red" onclick="excluirCliente(${i})">Excluir</button>
+              <button class="btn-small orange" onclick="editarCliente(${i})"><span class="material-icons">edit</span></button>
+              <button class="btn-small red" onclick="excluirCliente(${i})"><span class="material-icons">delete</span></button>
             </td>`;
           tbody.appendChild(tr);
           let option = document.createElement('option');
@@ -374,7 +427,7 @@
       };
       atualizarClientes();
 
-      // ---------- MPS (cards, tabela, editar, excluir) ----------
+      // MPs: cards, tabela, editar
       let mpList = lerLS('mpList', []);
       function atualizarMPCards() {
         let container = document.getElementById('mpCards');
@@ -383,21 +436,17 @@
           let color = i % 2 === 0 ? 'blue' : 'teal';
           let tipoVisual = mp.unidade === 'kg' ? 'kg' : 'unidade';
           container.innerHTML += `
-            <div class="col s12 m6 l3">
-              <div class="card z-depth-2 ${color} lighten-4" style="padding: 15px; margin-bottom: 12px;">
+            <div class="col s12 m6">
+              <div class="card z-depth-2 ${color} lighten-4" style="padding: 12px; margin-bottom:10px;">
                 <div class="card-content">
-                  <span class="card-title ${color}-text text-darken-4" style="font-size:1.3em;"><b>${mp.tipo}</b></span>
-                  <p style="font-size:1.1em; margin:9px 0;">
-                    Saldo: <b>${mp.saldo} ${tipoVisual}</b>
-                  </p>
-                  <p>
-                    Preço: <b>R$ ${mp.preco.toFixed(2)}/${tipoVisual}</b><br>
-                    Tipo: <b>${tipoVisual}</b>
-                  </p>
+                  <span class="card-title ${color}-text text-darken-4" style="font-size:1.2em;"><b>${mp.tipo}</b></span>
+                  <p>Saldo: <b>${mp.saldo} ${tipoVisual}</b></p>
+                  <p>Preço: <b>R$ ${mp.preco.toFixed(2)}/${tipoVisual}</b></p>
+                  <p>Tipo: <b>${tipoVisual}</b></p>
                 </div>
                 <div class="card-action">
-                  <button class="btn-small orange" onclick="editarMP(${i})">Editar</button>
-                  <button class="btn-small red" onclick="excluirMP(${i})">Excluir</button>
+                  <button class="btn-small orange" onclick="editarMP(${i})"><span class="material-icons">edit</span></button>
+                  <button class="btn-small red" onclick="excluirMP(${i})"><span class="material-icons">delete</span></button>
                 </div>
               </div>
             </div>
@@ -406,9 +455,7 @@
       }
       function atualizarMPCadastro() {
         salvarLS('mpList', mpList);
-        // Cards
         atualizarMPCards();
-        // Tabela
         let tbody = document.querySelector("#mpTable tbody"); if(tbody) tbody.innerHTML = "";
         mpList.forEach((mp, i) => {
           let tipoVisual = mp.unidade === 'kg' ? 'kg' : 'unidade';
@@ -418,8 +465,8 @@
             <td>R$ ${mp.preco.toFixed(2)}</td>
             <td>${tipoVisual}</td>
             <td>
-              <button class="btn-small orange" onclick="editarMP(${i})">Editar</button>
-              <button class="btn-small red" onclick="excluirMP(${i})">Excluir</button>
+              <button class="btn-small orange" onclick="editarMP(${i})"><span class="material-icons">edit</span></button>
+              <button class="btn-small red" onclick="excluirMP(${i})"><span class="material-icons">delete</span></button>
             </td>`;
           tbody.appendChild(tr);
         });
@@ -488,10 +535,10 @@
           let color = i % 2 === 0 ? 'blue' : 'teal';
           let tipoVisual = mp.unidade === 'kg' ? 'kg' : 'unidade';
           container.innerHTML += `
-            <div class="col s6 m3">
-              <div class="card ${color} lighten-4 z-depth-1 center-align" style="padding: 12px;">
-                <span class="${color}-text text-darken-3" style="font-size:1.3em"><b>${mp.tipo}</b></span><br>
-                <span style="font-size:2em">${mp.saldo} ${tipoVisual}</span>
+            <div class="col s6 m6">
+              <div class="card ${color} lighten-4 z-depth-1 center-align" style="padding: 9px;">
+                <span class="${color}-text text-darken-3" style="font-size:1.2em"><b>${mp.tipo}</b></span><br>
+                <span style="font-size:1.3em">${mp.saldo} ${tipoVisual}</span>
                 <br><span style="font-size:0.9em;">R$ ${mp.preco.toFixed(2)}/${tipoVisual}</span>
               </div>
             </div>
@@ -508,7 +555,7 @@
             <td>R$ ${mp.preco.toFixed(2)}</td>
             <td>${tipoVisual}</td>
             <td>
-              <button class="btn-small red" onclick="excluirEstoque(${i})">Excluir</button>
+              <button class="btn-small red" onclick="excluirEstoque(${i})"><span class="material-icons">delete</span></button>
             </td>`;
           tbody.appendChild(tr);
         });
@@ -521,7 +568,7 @@
       }
       function atualizarSelectMP(){
         let select = document.getElementById('nomeMP');
-        select.innerHTML = '<option value="" disabled selected>Escolha a Matéria Prima</option>';
+        select.innerHTML = '<option value="" disabled selected>Escolha a MP</option>';
         mpList.forEach((mp, i) => {
           let option = document.createElement('option');
           option.value = mp.tipo;
@@ -604,7 +651,7 @@
              <td>R$ ${p.custo.toFixed(2)}</td>
              <td>${p.vencimento}</td>
              <td>
-               <button class="btn-small red" onclick="excluirPedido(${i})">Excluir</button>
+               <button class="btn-small red" onclick="excluirPedido(${i})"><span class="material-icons">delete</span></button>
              </td>`;
           tbody.appendChild(tr);
         }
@@ -665,7 +712,7 @@
                           <td>${mov.vencimento || ''}</td>
                           <td>${aviso}</td>
                           <td>
-                            <button class="btn-small red" onclick="excluirFinanceiro(${i})">Excluir</button>
+                            <button class="btn-small red" onclick="excluirFinanceiro(${i})"><span class="material-icons">delete</span></button>
                           </td>`;
           tbody.appendChild(tr);
         }
@@ -692,20 +739,35 @@
       calcularSaldo();
 
       // ------ EXPORTAÇÃO EXCEL ------
-      document.getElementById('btnExportExcel').onclick = function(){
-        function toSheet(data, header) {
-          let arr = [header];
-          data.forEach(o => arr.push(header.map(h => o[h]!==undefined ? o[h] : "")));
-          return XLSX.utils.aoa_to_sheet(arr);
+      document.querySelectorAll('#btnExportExcel').forEach(btn => {
+        btn.onclick = function(){
+          function toSheet(data, header) {
+            let arr = [header];
+            data.forEach(o => arr.push(header.map(h => o[h]!==undefined ? o[h] : "")));
+            return XLSX.utils.aoa_to_sheet(arr);
+          }
+          let wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, toSheet(clientes, ["nome","docTipo","doc","tel","email","cep","endereco","numero","complemento"]),"Clientes");
+          XLSX.utils.book_append_sheet(wb, toSheet(mpList, ["tipo","saldo","preco","unidade"]),"Materia_Prima");
+          XLSX.utils.book_append_sheet(wb, toSheet(mpList, ["tipo","saldo","preco","unidade"]),"Estoque");
+          XLSX.utils.book_append_sheet(wb, toSheet(
+            pedidos.map(p=>{
+              let c = clientes[p.clienteIdx] || {};
+              return {
+                cliente: c.nome || '',
+                documento: c.doc || '',
+                kg: p.kg,
+                precoKg: p.precoKg,
+                custo: p.custo,
+                vencimento: p.vencimento
+              }
+            }),
+            ["cliente", "documento", "kg", "precoKg", "custo", "vencimento"]
+          ),"Pedidos");
+          XLSX.utils.book_append_sheet(wb, toSheet(financeiro, ["tipo","desc","valor","vencimento"]),"Financeiro");
+          XLSX.writeFile(wb, "controle_pedidos.xlsx");
         }
-        let wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, toSheet(clientes, ["nome","docTipo","doc","tel","email","cep","endereco","numero","complemento"]),"Clientes");
-        XLSX.utils.book_append_sheet(wb, toSheet(mpList, ["tipo","saldo","preco","unidade"]),"Materia_Prima");
-        XLSX.utils.book_append_sheet(wb, toSheet(mpList, ["tipo","saldo","preco","unidade"]),"Estoque");
-        XLSX.utils.book_append_sheet(wb, toSheet(pedidos, ["clienteIdx","kg","precoKg","custo","vencimento"]),"Pedidos");
-        XLSX.utils.book_append_sheet(wb, toSheet(financeiro, ["tipo","desc","valor","vencimento"]),"Financeiro");
-        XLSX.writeFile(wb, "controle_pedidos.xlsx");
-      }
+      });
     });
   </script>
 </body>
