@@ -14,19 +14,24 @@
     body { font-family: 'Roboto', Arial, sans-serif; background: #f3f3f3; }
     nav { box-shadow: 0px 2px 8px #455a6460;}
     .brand-logo { font-weight:500; }
-    .container { max-width:500px; width:98vw; margin:auto; }
-    @media (max-width:600px) {
-      .container { width:100vw; padding:0; }
+    /* Wider container so tables can be displayed horizontally */
+    .container { max-width:1200px; width:98vw; margin:auto; }
+    @media (max-width:900px) {
+      .container { width:100vw; max-width:100vw; padding:0; }
       th, td { font-size:0.95em;}
       form .row .input-field { margin-bottom:6px;}
       .nav-wrapper{padding:0 4px;}
     }
     .card-content { min-height: 120px; }
     .card-action { padding: 0 16px 16px 16px; }
-    .floating-action-btn { position:fixed; bottom:16px; right:16px; z-index:99; }
+    .floating-action-btn { position:fixed; bottom:16px; right:16px; z-index:99; display:flex; gap:12px;}
     .section-h { margin:24px 3px 16px 3px; font-size:1.18em; font-weight:500; }
-    .scroll-table { overflow-x:auto; }
-    .input-field input[type="text"]:not(.browser-default):focus, .input-field input[type="email"]:focus, .input-field input[type="number"]:focus {border-bottom:2px solid #2196f3; box-shadow:0 1px 0 0 #1976d2;}    
+    .scroll-table { overflow-x:auto; margin-bottom:12px; }
+    .table-filter { margin:6px 0 10px 0; padding:6px; width:100%; max-width:420px; display:block; }
+    .editing-row { background:#fffde7; }
+    table th, table td { min-width:140px; } /* force horizontal scroll on narrow screens */
+    td[contenteditable="true"] { background: #fffbe6; outline: none; }
+    .small-action { margin-right:6px; }
   </style>
 </head>
 <body class="grey lighten-5">
@@ -40,6 +45,7 @@
 
   <div class="container">
 
+    <!-- CLIENTE FORM (unchanged) -->
     <div class="section-h">Cadastro de Cliente</div>
     <form id="formCliente" class="card-panel z-depth-1">
       <div class="row">
@@ -101,7 +107,9 @@
       </button>
     </form>
 
+    <!-- CLIENTES TABLE + FILTER -->
     <div class="section-h">Clientes Cadastrados</div>
+    <input id="filterClientes" class="table-filter" placeholder="Filtrar clientes (pesquise por qualquer coluna)..." />
     <div class="scroll-table">
       <table class="highlight responsive-table" id="clientesTable">
         <thead>
@@ -122,6 +130,7 @@
       </table>
     </div>
 
+    <!-- MP Form -->
     <div class="section-h">Cadastro/Edição de MP</div>
     <form id="formCadastroMP" class="card-panel z-depth-1">
       <input type="hidden" id="mpEditIdx" value="-1">
@@ -159,10 +168,13 @@
       </div>
     </form>
 
+    <!-- MP Cards (unchanged) -->
     <div class="section-h">Minhas MPs</div>
     <div id="mpCards" class="row" style="margin-bottom: 18px;"></div>
 
+    <!-- MP TABLE + FILTER -->
     <div class="section-h">MPs Tabela</div>
+    <input id="filterMP" class="table-filter" placeholder="Filtrar MPs..." />
     <div class="scroll-table">
       <table class="highlight responsive-table" id="mpTable">
         <thead>
@@ -170,7 +182,7 @@
             <th>Tipo</th>
             <th>Saldo</th>
             <th>Preço</th>
-            <th>Tipo</th>
+            <th>Unidade</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -178,6 +190,7 @@
       </table>
     </div>
 
+    <!-- Movimentação MP form (unchanged) -->
     <div class="section-h">Movimentar MP</div>
     <form class="card-panel z-depth-1">
       <div class="row">
@@ -205,7 +218,9 @@
     <div class="section-h">Saldo MP</div>
     <div id="mpSaldo" class="row" style="margin-bottom: 12px;"></div>
 
+    <!-- Estoque TABLE -->
     <div class="section-h">Estoque Atual</div>
+    <input id="filterEstoque" class="table-filter" placeholder="Filtrar estoque..." />
     <div class="scroll-table">
       <table class="highlight responsive-table" id="estoqueTable">
         <thead>
@@ -221,6 +236,7 @@
       </table>
     </div>
 
+    <!-- Pedido form (unchanged) -->
     <div class="section-h">Novo Pedido</div>
     <form class="card-panel z-depth-1">
       <div class="row">
@@ -258,7 +274,9 @@
       <button class="btn blue" type="button" id="btnPedido" style="width:100%;margin-top:8px;">Registrar Pedido</button>
     </form>
 
+    <!-- Pedidos table + filter -->
     <div class="section-h">Pedidos</div>
+    <input id="filterPedidos" class="table-filter" placeholder="Filtrar pedidos..." />
     <div class="scroll-table">
       <table class="highlight responsive-table" id="pedidosTable">
         <thead>
@@ -276,6 +294,7 @@
       </table>
     </div>
 
+    <!-- Financeiro -->
     <div class="section-h">Financeiro</div>
     <form class="card-panel z-depth-1">
       <div class="row">
@@ -299,6 +318,7 @@
     </form>
 
     <div class="section-h">Financeiro Histórico</div>
+    <input id="filterFinanceiro" class="table-filter" placeholder="Filtrar financeiro..." />
     <div class="scroll-table">
       <table class="highlight responsive-table" id="financeiroTable">
         <thead>
@@ -314,70 +334,90 @@
         <tbody></tbody>
       </table>
     </div>
+
+    <!-- Saldo -->
     <div class="section-h">Saldo Atual</div>
     <div style="margin-bottom:32px;">
-      <input id="saldoAtual" readonly class="input-field center" style="width:120px;font-weight:bold;text-align:center">
+      <input id="saldoAtual" readonly class="input-field center" style="width:160px;font-weight:bold;text-align:center">
     </div>
   </div>
 
+  <!-- Floating Import/Export -->
   <div class="floating-action-btn">
     <button id="btnExportExcel" class="btn-floating btn-large green tooltipped" data-position="left" data-tooltip="Exportar Excel">
       <span class="material-icons">file_download</span>
     </button>
+    <button id="btnImportExcel" class="btn-floating btn-large blue tooltipped" data-position="left" data-tooltip="Importar Excel">
+      <span class="material-icons">file_upload</span>
+    </button>
+    <input type="file" id="inputImportExcel" accept=".xlsx,.xls" style="display:none"/>
   </div>
 
+  <!-- Libs -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       M.FormSelect.init(document.querySelectorAll('select'));
       M.Tooltip.init(document.querySelectorAll('.tooltipped'));
+
       function salvarLS(key, obj) { localStorage.setItem(key, JSON.stringify(obj)); }
       function lerLS(key, defaultVal) {
         let res = localStorage.getItem(key);
         return res ? JSON.parse(res) : defaultVal;
       }
 
-      // Cadastro Clientes
+      // --- Data holders ---
       let clientes = lerLS('clientes', []);
+      let mpList = lerLS('mpList', []);
+      let pedidos = lerLS('pedidos', []);
+      let financeiro = lerLS('financeiro', []);
       let editClienteIndex = null;
+
+      // ---------- CLIENTES ----------
       function atualizarClientes() {
         salvarLS('clientes', clientes);
-        let tbody = document.querySelector("#clientesTable tbody");
+        const tbody = document.querySelector("#clientesTable tbody");
         tbody.innerHTML = "";
-        let select = document.getElementById('pedidoCliente');
+        const select = document.getElementById('pedidoCliente');
         select.innerHTML = '<option value="" disabled selected>Selecione o cliente</option>';
-        clientes.forEach((c, i) => {
-          let tr = document.createElement('tr');
-          tr.innerHTML = `<td>${c.nome}</td>
-            <td>${c.docTipo === 'cpf' ? 'CPF' : 'CNPJ'}</td>
-            <td>${c.doc || ''}</td>
-            <td>${c.tel}</td>
-            <td>${c.email}</td>
-            <td>${c.cep}</td>
-            <td>${c.endereco}</td>
-            <td>${c.numero || ""}</td>
-            <td>${c.complemento || ""}</td>
+        clientes.forEach((c,i) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td data-field="nome">${escapeHTML(c.nome || "")}</td>
+            <td data-field="docTipo">${escapeHTML((c.docTipo === 'cnpj') ? 'CNPJ' : 'CPF')}</td>
+            <td data-field="doc">${escapeHTML(c.doc || "")}</td>
+            <td data-field="tel">${escapeHTML(c.tel || "")}</td>
+            <td data-field="email">${escapeHTML(c.email || "")}</td>
+            <td data-field="cep">${escapeHTML(c.cep || "")}</td>
+            <td data-field="endereco">${escapeHTML(c.endereco || "")}</td>
+            <td data-field="numero">${escapeHTML(c.numero || "")}</td>
+            <td data-field="complemento">${escapeHTML(c.complemento || "")}</td>
             <td>
-              <button class="btn-small orange" onclick="editarCliente(${i})"><span class="material-icons">edit</span></button>
+              <button class="btn-small orange small-action" onclick="editarCliente(${i})"><span class="material-icons">edit</span></button>
+              <button class="btn-small blue small-action" onclick="editRow('clientes', ${i}, this)"><span class="material-icons">edit_attributes</span></button>
               <button class="btn-small red" onclick="excluirCliente(${i})"><span class="material-icons">delete</span></button>
-            </td>`;
+            </td>
+          `;
           tbody.appendChild(tr);
-          let option = document.createElement('option');
+
+          const option = document.createElement('option');
           option.value = i;
-          option.text = `${c.nome} (${c.doc || c.cnpj || ""})`;
+          option.text = `${c.nome} (${c.doc || ""})`;
           select.appendChild(option);
         });
         M.FormSelect.init(select);
       }
       window.editarCliente = function(idx) {
-        let c = clientes[idx];
+        const c = clientes[idx];
         document.getElementById('clienteNome').value = c.nome;
-        document.getElementById('clienteDocTipo').value = c.docTipo|| '';
+        document.getElementById('clienteDocTipo').value = c.docTipo || 'cpf';
         document.getElementById('clienteDoc').value = c.doc || '';
-        document.getElementById('clienteTel').value = c.tel;
-        document.getElementById('clienteEmail').value = c.email;
-        document.getElementById('clienteCEP').value = c.cep;
-        document.getElementById('clienteEnd').value = c.endereco;
+        document.getElementById('clienteTel').value = c.tel || '';
+        document.getElementById('clienteEmail').value = c.email || '';
+        document.getElementById('clienteCEP').value = c.cep || '';
+        document.getElementById('clienteEnd').value = c.endereco || '';
         document.getElementById('clienteNum').value = c.numero || '';
         document.getElementById('clienteComp').value = c.complemento || '';
         editClienteIndex = idx;
@@ -385,24 +425,26 @@
         M.FormSelect.init(document.getElementById('clienteDocTipo'));
       }
       window.excluirCliente = function(idx) {
-        if(confirm("Confirma exclusão?")) {
-          clientes.splice(idx, 1);
-          atualizarClientes();
-        }
+        if(!confirm("Confirma exclusão?")) return;
+        clientes.splice(idx,1);
+        atualizarClientes();
+        // update dependent lists
+        salvarLS('clientes', clientes);
+        atualizarPedidos(); // pedidos reference may change visually but indices should remain consistent
       }
-      document.getElementById('formCliente').onsubmit = function(e) {
+      document.getElementById('formCliente').onsubmit = function(e){
         e.preventDefault();
-        let nome = document.getElementById('clienteNome').value.trim();
-        let docTipo = document.getElementById('clienteDocTipo').value;
-        let doc = document.getElementById('clienteDoc').value.trim();
-        let tel = document.getElementById('clienteTel').value.trim();
-        let email = document.getElementById('clienteEmail').value.trim();
-        let cep = document.getElementById('clienteCEP').value.trim();
-        let end = document.getElementById('clienteEnd').value.trim();
-        let numero = document.getElementById('clienteNum').value.trim();
-        let complemento = document.getElementById('clienteComp').value.trim();
-        if(!nome || !docTipo || !doc) return M.toast({html: "Preencha os campos obrigatórios!"});
-        let clienteObj = {nome, docTipo, doc, tel, email, cep, endereco: end, numero, complemento};
+        const nome = document.getElementById('clienteNome').value.trim();
+        const docTipo = document.getElementById('clienteDocTipo').value;
+        const doc = document.getElementById('clienteDoc').value.trim();
+        const tel = document.getElementById('clienteTel').value.trim();
+        const email = document.getElementById('clienteEmail').value.trim();
+        const cep = document.getElementById('clienteCEP').value.trim();
+        const endereco = document.getElementById('clienteEnd').value.trim();
+        const numero = document.getElementById('clienteNum').value.trim();
+        const complemento = document.getElementById('clienteComp').value.trim();
+        if(!nome || !docTipo || !doc) { M.toast({html: "Preencha os campos obrigatórios!"}); return; }
+        const clienteObj = { nome, docTipo, doc, tel, email, cep, endereco, numero, complemento };
         if(editClienteIndex !== null) {
           clientes[editClienteIndex] = clienteObj;
           editClienteIndex = null;
@@ -411,37 +453,35 @@
         }
         document.getElementById('formCliente').reset();
         atualizarClientes();
-        M.toast({html: "Cliente salvo!"});
+        M.toast({html:"Cliente salvo!"});
       }
-      document.getElementById('buscarCEP').onclick = async function() {
-        let cep = document.getElementById('clienteCEP').value.replace(/\D/g,"");
+      document.getElementById('buscarCEP').onclick = async function(){
+        const cep = document.getElementById('clienteCEP').value.replace(/\D/g,'');
         if(cep.length != 8) return M.toast({html:"CEP inválido!"});
         fetch(`https://viacep.com.br/ws/${cep}/json/`)
           .then(r=>r.json())
           .then(d=>{
             if(d.erro) return M.toast({html:"CEP não encontrado!"});
-            let endereco = `${d.logradouro || ''}, ${d.bairro || ''} - ${d.localidade || ''} / ${d.uf || ''}`;
+            const endereco = `${d.logradouro || ''}, ${d.bairro || ''} - ${d.localidade || ''} / ${d.uf || ''}`;
             document.getElementById('clienteEnd').value = endereco;
             M.updateTextFields();
           });
       };
-      atualizarClientes();
 
-      // MPs: cards, tabela, editar
-      let mpList = lerLS('mpList', []);
+      // ---------- MP ----------
       function atualizarMPCards() {
-        let container = document.getElementById('mpCards');
+        const container = document.getElementById('mpCards');
         container.innerHTML = "";
-        mpList.forEach((mp, i) => {
-          let color = i % 2 === 0 ? 'blue' : 'teal';
-          let tipoVisual = mp.unidade === 'kg' ? 'kg' : 'unidade';
+        mpList.forEach((mp,i) => {
+          const color = i % 2 === 0 ? 'blue' : 'teal';
+          const tipoVisual = mp.unidade === 'kg' ? 'kg' : 'unidade';
           container.innerHTML += `
             <div class="col s12 m6">
               <div class="card z-depth-2 ${color} lighten-4" style="padding: 12px; margin-bottom:10px;">
                 <div class="card-content">
-                  <span class="card-title ${color}-text text-darken-4" style="font-size:1.2em;"><b>${mp.tipo}</b></span>
+                  <span class="card-title ${color}-text text-darken-4" style="font-size:1.2em;"><b>${escapeHTML(mp.tipo)}</b></span>
                   <p>Saldo: <b>${mp.saldo} ${tipoVisual}</b></p>
-                  <p>Preço: <b>R$ ${mp.preco.toFixed(2)}/${tipoVisual}</b></p>
+                  <p>Preço: <b>R$ ${Number(mp.preco).toFixed(2)}/${tipoVisual}</b></p>
                   <p>Tipo: <b>${tipoVisual}</b></p>
                 </div>
                 <div class="card-action">
@@ -453,29 +493,32 @@
           `;
         });
       }
-      function atualizarMPCadastro() {
+      function atualizarMPCadastro(){
         salvarLS('mpList', mpList);
         atualizarMPCards();
-        let tbody = document.querySelector("#mpTable tbody"); if(tbody) tbody.innerHTML = "";
-        mpList.forEach((mp, i) => {
-          let tipoVisual = mp.unidade === 'kg' ? 'kg' : 'unidade';
-          let tr = document.createElement('tr');
-          tr.innerHTML = `<td>${mp.tipo}</td>
-            <td>${mp.saldo} ${tipoVisual}</td>
-            <td>R$ ${mp.preco.toFixed(2)}</td>
-            <td>${tipoVisual}</td>
+        const tbody = document.querySelector('#mpTable tbody'); tbody.innerHTML = "";
+        mpList.forEach((mp,i) => {
+          const tipoVisual = mp.unidade === 'kg' ? 'kg' : 'unidade';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td data-field="tipo">${escapeHTML(mp.tipo)}</td>
+            <td data-field="saldo">${mp.saldo}</td>
+            <td data-field="preco">${Number(mp.preco).toFixed(2)}</td>
+            <td data-field="unidade">${escapeHTML(mp.unidade)}</td>
             <td>
-              <button class="btn-small orange" onclick="editarMP(${i})"><span class="material-icons">edit</span></button>
+              <button class="btn-small orange small-action" onclick="editarMP(${i})"><span class="material-icons">edit</span></button>
+              <button class="btn-small blue small-action" onclick="editRow('mpList', ${i}, this)"><span class="material-icons">edit_attributes</span></button>
               <button class="btn-small red" onclick="excluirMP(${i})"><span class="material-icons">delete</span></button>
-            </td>`;
+            </td>
+          `;
           tbody.appendChild(tr);
         });
         atualizarMPSaldo();
         atualizarEstoque();
         atualizarSelectMP();
       }
-      window.editarMP = function(idx) {
-        let mp = mpList[idx];
+      window.editarMP = function(idx){
+        const mp = mpList[idx];
         document.getElementById('mpEditIdx').value = idx;
         document.getElementById('mpTipo').value = mp.tipo;
         document.getElementById('mpQtd').value = mp.saldo;
@@ -486,41 +529,38 @@
         document.getElementById('btnSalvarMP').textContent = "Salvar Alteração";
         document.getElementById('btnCancelarEditMP').style.display = "";
       }
-      window.excluirMP = function(idx) {
-        if(confirm("Confirma exclusão?")) {
-          mpList.splice(idx, 1);
-          atualizarMPCadastro();
-          cancelarEditMP();
-        }
+      window.excluirMP = function(idx){
+        if(!confirm("Confirma exclusão?")) return;
+        mpList.splice(idx,1);
+        atualizarMPCadastro();
       }
-      function cancelarEditMP() {
+      function cancelarEditMP(){
         document.getElementById('mpEditIdx').value = -1;
         document.getElementById('formCadastroMP').reset();
         document.getElementById('btnSalvarMP').textContent = "Salvar MP";
         document.getElementById('btnCancelarEditMP').style.display = "none";
       }
       document.getElementById('btnCancelarEditMP').onclick = cancelarEditMP;
-
       document.getElementById('formCadastroMP').onsubmit = function(e){
         e.preventDefault();
-        let idx = parseInt(document.getElementById('mpEditIdx').value);
-        let tipo = document.getElementById('mpTipo').value.trim();
-        let qtd = parseFloat(document.getElementById('mpQtd').value);
-        let preco = parseFloat(document.getElementById('mpPreco').value);
-        let unidade = document.getElementById('mpUnidade').value;
-        if (!tipo || isNaN(qtd) || qtd < 0 || isNaN(preco) || preco <= 0 || !unidade) {
+        const idx = parseInt(document.getElementById('mpEditIdx').value);
+        const tipo = document.getElementById('mpTipo').value.trim();
+        const qtd = parseFloat(document.getElementById('mpQtd').value);
+        const preco = parseFloat(document.getElementById('mpPreco').value);
+        const unidade = document.getElementById('mpUnidade').value;
+        if(!tipo || isNaN(qtd) || qtd < 0 || isNaN(preco) || preco <= 0 || !unidade){
           M.toast({html:"Preencha todos os campos da MP!"});
           return;
         }
-        if (idx >= 0) {
-          mpList[idx] = {tipo, saldo: qtd, preco, unidade};
+        if(idx >= 0){
+          mpList[idx] = { tipo, saldo: qtd, preco, unidade };
           cancelarEditMP();
         } else {
-          if(mpList.some((mp,i) => mp.tipo.toLowerCase() === tipo.toLowerCase() && i !== idx)){
+          if(mpList.some((m,i)=>m.tipo.toLowerCase()===tipo.toLowerCase() && i!==idx)){
             M.toast({html:"Já existe uma MP com esse tipo!"});
             return;
           }
-          mpList.push({tipo, saldo: qtd, preco, unidade});
+          mpList.push({ tipo, saldo: qtd, preco, unidade });
           document.getElementById('formCadastroMP').reset();
         }
         atualizarMPCadastro();
@@ -528,71 +568,75 @@
       }
       atualizarMPCadastro();
 
-      // ---------- ESTOQUE E MOVIMENTAÇÃO ----------
-      function atualizarMPSaldo() {
-        let container = document.getElementById('mpSaldo'); container.innerHTML = "";
-        mpList.forEach((mp, i) => {
-          let color = i % 2 === 0 ? 'blue' : 'teal';
-          let tipoVisual = mp.unidade === 'kg' ? 'kg' : 'unidade';
+      // ---------- ESTOQUE / SELECT ----------
+      function atualizarMPSaldo(){
+        const container = document.getElementById('mpSaldo'); container.innerHTML = "";
+        mpList.forEach((mp,i) => {
+          const color = i % 2 === 0 ? 'blue' : 'teal';
+          const tipoVisual = mp.unidade === 'kg' ? 'kg' : 'unidade';
           container.innerHTML += `
             <div class="col s6 m6">
-              <div class="card ${color} lighten-4 z-depth-1 center-align" style="padding: 9px;">
-                <span class="${color}-text text-darken-3" style="font-size:1.2em"><b>${mp.tipo}</b></span><br>
-                <span style="font-size:1.3em">${mp.saldo} ${tipoVisual}</span>
-                <br><span style="font-size:0.9em;">R$ ${mp.preco.toFixed(2)}/${tipoVisual}</span>
+              <div class="card ${color} lighten-4 z-depth-1 center-align" style="padding:9px;">
+                <span class="${color}-text text-darken-3" style="font-size:1.2em"><b>${escapeHTML(mp.tipo)}</b></span><br>
+                <span style="font-size:1.3em">${mp.saldo} ${tipoVisual}</span><br>
+                <span style="font-size:0.9em;">R$ ${Number(mp.preco).toFixed(2)}/${tipoVisual}</span>
               </div>
             </div>
           `;
         });
       }
-      function atualizarEstoque() {
-        let tbody = document.querySelector("#estoqueTable tbody"); tbody.innerHTML = "";
-        mpList.forEach((mp, i) => {
-          let tipoVisual = mp.unidade === 'kg' ? 'kg' : 'unidade';
-          let tr = document.createElement('tr');
-          tr.innerHTML = `<td>${mp.tipo}</td>
-            <td>${mp.saldo} ${tipoVisual}</td>
-            <td>R$ ${mp.preco.toFixed(2)}</td>
-            <td>${tipoVisual}</td>
+      function atualizarEstoque(){
+        const tbody = document.querySelector('#estoqueTable tbody'); tbody.innerHTML = "";
+        mpList.forEach((mp,i) => {
+          const tipoVisual = mp.unidade === 'kg' ? 'kg' : 'unidade';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td data-field="tipo">${escapeHTML(mp.tipo)}</td>
+            <td data-field="saldo">${mp.saldo}</td>
+            <td data-field="preco">${Number(mp.preco).toFixed(2)}</td>
+            <td data-field="unidade">${escapeHTML(mp.unidade)}</td>
             <td>
+              <button class="btn-small blue small-action" onclick="editRow('mpList', ${i}, this)"><span class="material-icons">edit_attributes</span></button>
               <button class="btn-small red" onclick="excluirEstoque(${i})"><span class="material-icons">delete</span></button>
-            </td>`;
+            </td>
+          `;
           tbody.appendChild(tr);
         });
       }
       window.excluirEstoque = function(idx){
-        if(confirm("Confirma exclusão?")) {
-          mpList.splice(idx, 1);
-          atualizarMPCadastro();
-        }
+        if(!confirm("Confirma exclusão?")) return;
+        mpList.splice(idx,1);
+        atualizarMPCadastro();
       }
       function atualizarSelectMP(){
-        let select = document.getElementById('nomeMP');
+        const select = document.getElementById('nomeMP');
         select.innerHTML = '<option value="" disabled selected>Escolha a MP</option>';
-        mpList.forEach((mp, i) => {
-          let option = document.createElement('option');
-          option.value = mp.tipo;
-          option.text = `${mp.tipo} (${mp.unidade === 'kg' ? 'kg' : 'unidade'})`;
-          select.appendChild(option);
+        mpList.forEach(mp => {
+          const opt = document.createElement('option');
+          opt.value = mp.tipo;
+          opt.text = `${mp.tipo} (${mp.unidade==='kg' ? 'kg' : 'unidade'})`;
+          select.appendChild(opt);
         });
-        M.FormSelect.init(select); atualizarLabelQtd();
+        M.FormSelect.init(select);
+        atualizarLabelQtd();
       }
-      function atualizarLabelQtd() {
-        let select = document.getElementById('nomeMP');
-        let tipoMP = select.value; let mp = mpList.find(mp => mp.tipo === tipoMP);
-        let labelEl = document.getElementById('qtdMPLab');
-        labelEl.innerText = mp ? (mp.unidade === 'kg' ? 'Quantidade (kg)' : 'Quantidade (unidades)') : 'Quantidade';
+      function atualizarLabelQtd(){
+        const select = document.getElementById('nomeMP');
+        const tipoMP = select.value;
+        const mp = mpList.find(m=>m.tipo===tipoMP);
+        const labelEl = document.getElementById('qtdMPLab');
+        labelEl.innerText = mp ? (mp.unidade==='kg' ? 'Quantidade (kg)' : 'Quantidade (unidades)') : 'Quantidade';
       }
       document.getElementById('nomeMP').onchange = atualizarLabelQtd;
-      document.getElementById('btnMP').onclick = function () {
+      document.getElementById('btnMP').onclick = function(){
         const nome = document.getElementById('nomeMP').value;
         const qtd = parseFloat(document.getElementById('qtdMP').value);
         const op = document.getElementById('opMP').value;
-        let mp = mpList.find(mp => mp.tipo === nome);
-        if (!mp || isNaN(qtd) || qtd <= 0) return M.toast({html: "Preencha corretamente!"});
-        if (op === "entrada") mp.saldo += qtd;
-        else if (op === "saida") {
-          if (mp.saldo < qtd) return M.toast({html:"Estoque insuficiente!"});
+        const mp = mpList.find(m=>m.tipo===nome);
+        if(!mp || isNaN(qtd) || qtd<=0) return M.toast({html:"Preencha corretamente!"});
+        if(op==='entrada') mp.saldo += qtd;
+        else {
+          if(mp.saldo < qtd) return M.toast({html:"Estoque insuficiente!"});
           mp.saldo -= qtd;
         }
         atualizarMPCadastro();
@@ -604,30 +648,54 @@
       };
 
       // ---------- PEDIDOS ----------
-      let pedidos = lerLS('pedidos', []);
-      function atualizarCustoPedido() {
-        let kg = parseFloat(document.getElementById('pedidoKg').value) || 0;
-        let preco = parseFloat(document.getElementById('pedidoPrecoKg').value) || 0;
-        document.getElementById('pedidoCusto').value = (kg * preco).toFixed(2);
+      function atualizarCustoPedido(){
+        const kg = parseFloat(document.getElementById('pedidoKg').value) || 0;
+        const preco = parseFloat(document.getElementById('pedidoPrecoKg').value) || 0;
+        document.getElementById('pedidoCusto').value = (kg*preco).toFixed(2);
       }
       document.getElementById('pedidoKg').oninput = atualizarCustoPedido;
       document.getElementById('pedidoPrecoKg').oninput = atualizarCustoPedido;
-      document.getElementById('btnPedido').onclick = function () {
+
+      function atualizarPedidos(){
+        salvarLS('pedidos', pedidos);
+        const tbody = document.querySelector('#pedidosTable tbody'); tbody.innerHTML = "";
+        pedidos.forEach((p,i) => {
+          const c = clientes[p.clienteIdx] || {};
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td data-field="cliente">${escapeHTML(c.nome || "")}</td>
+            <td data-field="documento">${escapeHTML(c.doc || "")}</td>
+            <td data-field="kg">${p.kg}</td>
+            <td data-field="precoKg">${Number(p.precoKg).toFixed(2)}</td>
+            <td data-field="custo">${Number(p.custo).toFixed(2)}</td>
+            <td data-field="vencimento">${escapeHTML(p.vencimento || "")}</td>
+            <td>
+              <button class="btn-small blue small-action" onclick="editRow('pedidos', ${i}, this)"><span class="material-icons">edit_attributes</span></button>
+              <button class="btn-small red" onclick="excluirPedido(${i})"><span class="material-icons">delete</span></button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      document.getElementById('btnPedido').onclick = function(){
         const clienteIdx = document.getElementById('pedidoCliente').value;
         const kg = parseFloat(document.getElementById('pedidoKg').value);
         const precoKg = parseFloat(document.getElementById('pedidoPrecoKg').value);
         const custo = parseFloat(document.getElementById('pedidoCusto').value);
         const venc = document.getElementById('pedidoVenc').value;
-        if (clienteIdx === "" || isNaN(kg) || kg <= 0 || isNaN(precoKg) || precoKg <= 0 ||
-            isNaN(custo) || custo <= 0 || venc === "") return M.toast({html: "Preencha todos os campos do pedido!"});
-        let hoje = new Date();
-        let vencDate = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + parseInt(venc));
-        let vencStr = `${vencDate.getDate().toString().padStart(2,'0')}/${(vencDate.getMonth()+1).toString().padStart(2,'0')}/${vencDate.getFullYear()}`;
+        if(clienteIdx === "" || isNaN(kg) || kg<=0 || isNaN(precoKg) || precoKg<=0 || isNaN(custo) || custo<=0 || !venc) {
+          M.toast({html:"Preencha todos os campos do pedido!"});
+          return;
+        }
+        const hoje = new Date();
+        const vencDate = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + parseInt(venc));
+        const vencStr = `${String(vencDate.getDate()).padStart(2,'0')}/${String(vencDate.getMonth()+1).padStart(2,'0')}/${vencDate.getFullYear()}`;
         pedidos.push({ clienteIdx: Number(clienteIdx), kg, precoKg, custo, vencimento: vencStr });
         salvarLS('pedidos', pedidos);
         atualizarPedidos();
-        let c = clientes[clienteIdx];
+        const c = clientes[clienteIdx];
         registrarFinanceiro(c ? c.nome : "", custo, 'saida', true, vencStr);
+        // reset form
         document.getElementById('pedidoCliente').selectedIndex = 0;
         document.getElementById('pedidoKg').value = "";
         document.getElementById('pedidoPrecoKg').value = "";
@@ -636,52 +704,59 @@
         M.updateTextFields();
         M.FormSelect.init(document.getElementById('pedidoCliente'));
         M.FormSelect.init(document.getElementById('pedidoVenc'));
-      };
-      function atualizarPedidos() {
-        let tbody = document.querySelector("#pedidosTable tbody");
-        tbody.innerHTML = "";
-        for (const [i,p] of pedidos.entries()) {
-          let c = clientes[p.clienteIdx];
-          tr = document.createElement('tr');
-          tr.innerHTML =
-            `<td>${c ? c.nome : ''}</td>
-             <td>${c ? (c.doc || c.cnpj || '') : ''}</td>
-             <td>${p.kg} kg</td>
-             <td>R$ ${p.precoKg.toFixed(2)}</td>
-             <td>R$ ${p.custo.toFixed(2)}</td>
-             <td>${p.vencimento}</td>
-             <td>
-               <button class="btn-small red" onclick="excluirPedido(${i})"><span class="material-icons">delete</span></button>
-             </td>`;
-          tbody.appendChild(tr);
-        }
       }
       window.excluirPedido = function(idx){
-        if(confirm("Confirma exclusão?")) {
-          pedidos.splice(idx, 1);
-          atualizarPedidos();
-        }
+        if(!confirm("Confirma exclusão?")) return;
+        pedidos.splice(idx,1);
+        atualizarPedidos();
       }
-      atualizarPedidos();
 
       // ---------- FINANCEIRO ----------
-      let financeiro = lerLS('financeiro', []);
-      document.getElementById('btnFinanceiro').onclick = function () {
+      function atualizarFinanceiro(){
+        salvarLS('financeiro', financeiro);
+        const tbody = document.querySelector('#financeiroTable tbody'); tbody.innerHTML = "";
+        const hoje = new Date();
+        let alerta = false;
+        financeiro.forEach((mov,i) => {
+          let aviso = "";
+          if(mov.vencimento){
+            const [d,m,y] = mov.vencimento.split('/');
+            const venc = new Date(Number(y), Number(m)-1, Number(d));
+            const diff = Math.ceil((venc - hoje)/1000/60/60/24);
+            if(diff <= 5 && diff >= 0){ aviso = `<span style="color:#b71c1c;font-weight:bold">🛈 Próximo ao vencimento!</span>`; alerta = true; }
+          }
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td data-field="tipo">${escapeHTML(mov.tipo)}</td>
+            <td data-field="desc">${escapeHTML(mov.desc)}</td>
+            <td data-field="valor">${Number(mov.valor).toFixed(2)}</td>
+            <td data-field="vencimento">${escapeHTML(mov.vencimento || "")}</td>
+            <td>${aviso}</td>
+            <td>
+              <button class="btn-small blue small-action" onclick="editRow('financeiro', ${i}, this)"><span class="material-icons">edit_attributes</span></button>
+              <button class="btn-small red" onclick="excluirFinanceiro(${i})"><span class="material-icons">delete</span></button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+        if(alerta) M.toast({html:"Atenção: Existem pagamentos próximos ao vencimento!", displayLength:8000, classes:'red'});
+      }
+      document.getElementById('btnFinanceiro').onclick = function(){
         registrarFinanceiro();
-      };
-      function registrarFinanceiro(desc, valor, tipo, chamadoPorPedido = false, vencStr = "") {
-        if (!chamadoPorPedido) {
+      }
+      function registrarFinanceiro(desc, valor, tipo, chamadoPorPedido = false, vencStr = ""){
+        if(!chamadoPorPedido){
           desc = document.getElementById('finDesc').value.trim();
           valor = parseFloat(document.getElementById('finValor').value);
           tipo = document.getElementById('finTipo').value;
           vencStr = "";
-          if (!desc || isNaN(valor)) return M.toast({html: "Preencha corretamente!"});
+          if(!desc || isNaN(valor)) { M.toast({html:"Preencha corretamente!"}); return; }
         }
         financeiro.push({ tipo, desc, valor, vencimento: vencStr });
         salvarLS('financeiro', financeiro);
         atualizarFinanceiro();
         calcularSaldo();
-        if (!chamadoPorPedido) {
+        if(!chamadoPorPedido){
           document.getElementById('finDesc').value = "";
           document.getElementById('finValor').value = "";
           document.getElementById('finTipo').selectedIndex = 0;
@@ -689,85 +764,330 @@
           M.FormSelect.init(document.getElementById('finTipo'));
         }
       }
-      function atualizarFinanceiro() {
-        let tbody = document.querySelector("#financeiroTable tbody");
-        tbody.innerHTML = "";
-        let hoje = new Date();
-        let alerta = false;
-        for (const [i,mov] of financeiro.entries()) {
-          let aviso = "";
-          if (mov.vencimento) {
-            let [d,m,y] = mov.vencimento.split("/");
-            let venc = new Date(Number(y), Number(m)-1, Number(d));
-            let diff = Math.ceil((venc-hoje)/1000/60/60/24);
-            if (diff <= 5 && diff >= 0) {
-              aviso = `<span style="color:#b71c1c;font-weight:bold">🛈 Próximo ao vencimento!</span>`;
-              alerta = true;
-            }
-          }
-          let tr = document.createElement('tr');
-          tr.innerHTML = `<td>${mov.tipo}</td>
-                          <td>${mov.desc}</td>
-                          <td>R$ ${mov.valor.toFixed(2)}</td>
-                          <td>${mov.vencimento || ''}</td>
-                          <td>${aviso}</td>
-                          <td>
-                            <button class="btn-small red" onclick="excluirFinanceiro(${i})"><span class="material-icons">delete</span></button>
-                          </td>`;
-          tbody.appendChild(tr);
-        }
-        if(alerta) {
-          M.toast({html:"Atenção: Existem pagamentos próximos ao vencimento!", displayLength:8000, classes:'red'});
-        }
-      }
       window.excluirFinanceiro = function(idx){
-        if(confirm("Confirma exclusão?")) {
-          financeiro.splice(idx, 1);
-          atualizarFinanceiro();
-          calcularSaldo();
-        }
+        if(!confirm("Confirma exclusão?")) return;
+        financeiro.splice(idx,1);
+        atualizarFinanceiro();
+        calcularSaldo();
       }
-      function calcularSaldo() {
+      function calcularSaldo(){
         let saldo = 0;
-        for (const mov of financeiro) {
-          if (mov.tipo === "entrada") saldo += mov.valor;
+        financeiro.forEach(mov => {
+          if(mov.tipo === "entrada") saldo += mov.valor;
           else saldo -= mov.valor;
-        }
+        });
         document.getElementById('saldoAtual').value = "R$ " + saldo.toFixed(2);
       }
       atualizarFinanceiro();
       calcularSaldo();
 
-      // ------ EXPORTAÇÃO EXCEL ------
-      document.querySelectorAll('#btnExportExcel').forEach(btn => {
-        btn.onclick = function(){
-          function toSheet(data, header) {
-            let arr = [header];
-            data.forEach(o => arr.push(header.map(h => o[h]!==undefined ? o[h] : "")));
-            return XLSX.utils.aoa_to_sheet(arr);
-          }
-          let wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, toSheet(clientes, ["nome","docTipo","doc","tel","email","cep","endereco","numero","complemento"]),"Clientes");
-          XLSX.utils.book_append_sheet(wb, toSheet(mpList, ["tipo","saldo","preco","unidade"]),"Materia_Prima");
-          XLSX.utils.book_append_sheet(wb, toSheet(mpList, ["tipo","saldo","preco","unidade"]),"Estoque");
-          XLSX.utils.book_append_sheet(wb, toSheet(
-            pedidos.map(p=>{
-              let c = clientes[p.clienteIdx] || {};
-              return {
-                cliente: c.nome || '',
-                documento: c.doc || '',
-                kg: p.kg,
-                precoKg: p.precoKg,
-                custo: p.custo,
-                vencimento: p.vencimento
-              }
-            }),
-            ["cliente", "documento", "kg", "precoKg", "custo", "vencimento"]
-          ),"Pedidos");
-          XLSX.utils.book_append_sheet(wb, toSheet(financeiro, ["tipo","desc","valor","vencimento"]),"Financeiro");
-          XLSX.writeFile(wb, "controle_pedidos.xlsx");
+      // ---------- EXPORTAÇÃO (SheetJS) ----------
+      document.getElementById('btnExportExcel').onclick = function(){
+        function toSheet(data, header) {
+          const arr = [header];
+          data.forEach(o => arr.push(header.map(h => o[h] !== undefined ? o[h] : "")));
+          return XLSX.utils.aoa_to_sheet(arr);
         }
-      });
+        const clientesData = clientes.map(c => ({
+          nome: c.nome, docTipo: c.docTipo, doc: c.doc, tel: c.tel, email: c.email,
+          cep: c.cep, endereco: c.endereco, numero: c.numero, complemento: c.complemento
+        }));
+        const mpData = mpList.map(m => ({ tipo: m.tipo, saldo: m.saldo, preco: m.preco, unidade: m.unidade }));
+        const pedidosData = pedidos.map(p => {
+          const c = clientes[p.clienteIdx] || {};
+          return { cliente: c.nome || "", documento: c.doc || "", kg: p.kg, precoKg: p.precoKg, custo: p.custo, vencimento: p.vencimento };
+        });
+        const financeiroData = financeiro.map(f => ({ tipo: f.tipo, desc: f.desc, valor: f.valor, vencimento: f.vencimento }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, toSheet(clientesData, ["nome","docTipo","doc","tel","email","cep","endereco","numero","complemento"]), "Clientes");
+        XLSX.utils.book_append_sheet(wb, toSheet(mpData, ["tipo","saldo","preco","unidade"]), "Materia_Prima");
+        XLSX.utils.book_append_sheet(wb, toSheet(pedidosData, ["cliente","documento","kg","precoKg","custo","vencimento"]), "Pedidos");
+        XLSX.utils.book_append_sheet(wb, toSheet(financeiroData, ["tipo","desc","valor","vencimento"]), "Financeiro");
+        XLSX.writeFile(wb, "controle_pedidos.xlsx");
+      };
+
+      // ---------- IMPORTAÇÃO (SheetJS) ----------
+      document.getElementById('btnImportExcel').onclick = function(){ document.getElementById('inputImportExcel').click(); }
+      document.getElementById('inputImportExcel').onchange = function(e){
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt){
+          try{
+            const data = new Uint8Array(evt.target.result);
+            const wb = XLSX.read(data, { type: 'array' });
+
+            // Clientes
+            if(wb.Sheets["Clientes"]){
+              const arr = XLSX.utils.sheet_to_json(wb.Sheets["Clientes"], { header: 1 });
+              clientes = arr.slice(1).map(r => ({
+                nome: r[0] || "", docTipo: r[1] || "cpf", doc: r[2] || "", tel: r[3] || "",
+                email: r[4] || "", cep: r[5] || "", endereco: r[6] || "", numero: r[7] || "", complemento: r[8] || ""
+              }));
+              salvarLS('clientes', clientes);
+              atualizarClientes();
+            }
+
+            // MP
+            if(wb.Sheets["Materia_Prima"]){
+              const arr = XLSX.utils.sheet_to_json(wb.Sheets["Materia_Prima"], { header: 1 });
+              mpList = arr.slice(1).map(r => ({ tipo: r[0] || "", saldo: Number(r[1])||0, preco: Number(r[2])||0, unidade: r[3] || 'kg' }));
+              salvarLS('mpList', mpList);
+              atualizarMPCadastro();
+            }
+
+            // Pedidos
+            if(wb.Sheets["Pedidos"]){
+              const arr = XLSX.utils.sheet_to_json(wb.Sheets["Pedidos"], { header: 1 });
+              const loaded = arr.slice(1).map(r => ({ clienteNome: r[0] || "", documento: r[1] || "", kg: Number(r[2])||0, precoKg: Number(r[3])||0, custo: Number(r[4])||0, vencimento: r[5] || "" }));
+              // try to map clienteNome/documento to clienteIdx
+              pedidos = loaded.map(l => {
+                const idx = clientes.findIndex(c => (c.nome === l.clienteNome && (c.doc || '') === (l.documento || '')));
+                return { clienteIdx: idx >= 0 ? idx : -1, kg: l.kg, precoKg: l.precoKg, custo: l.custo, vencimento: l.vencimento };
+              });
+              salvarLS('pedidos', pedidos);
+              atualizarPedidos();
+            }
+
+            // Financeiro
+            if(wb.Sheets["Financeiro"]){
+              const arr = XLSX.utils.sheet_to_json(wb.Sheets["Financeiro"], { header: 1 });
+              financeiro = arr.slice(1).map(r => ({ tipo: r[0] || "", desc: r[1] || "", valor: Number(r[2])||0, vencimento: r[3] || "" }));
+              salvarLS('financeiro', financeiro);
+              atualizarFinanceiro();
+              calcularSaldo();
+            }
+
+            M.toast({html:"Dados importados com sucesso!"});
+          }catch(err){
+            console.error(err);
+            M.toast({html:"Erro ao importar arquivo. Verifique o formato."});
+          }
+        };
+        reader.readAsArrayBuffer(file);
+        e.target.value = "";
+      };
+
+      // ---------- FILTERS ----------
+      function addFilter(inputId, tableId){
+        const input = document.getElementById(inputId);
+        input.addEventListener('input', function(){
+          const txt = this.value.toLowerCase().trim();
+          const trs = document.querySelectorAll(`#${tableId} tbody tr`);
+          trs.forEach(tr => {
+            const text = tr.innerText.toLowerCase();
+            tr.style.display = text.indexOf(txt) > -1 ? '' : 'none';
+          });
+        });
+      }
+      addFilter('filterClientes','clientesTable');
+      addFilter('filterMP','mpTable');
+      addFilter('filterEstoque','estoqueTable');
+      addFilter('filterPedidos','pedidosTable');
+      addFilter('filterFinanceiro','financeiroTable');
+
+      // ---------- GENERIC ROW EDITOR ----------
+      // Called by edit buttons: editRow(arrayName, index, thisButton)
+      window.editRow = function(arrayName, index, btn){
+        const tr = btn.closest('tr');
+        // toggle edit mode
+        if(tr.classList.contains('editing-row')){
+          // already editing -> should be save
+          saveRowEdits(tr, arrayName, index);
+          return;
+        }
+        startRowEdit(tr, arrayName, index);
+      };
+
+      function startRowEdit(tr, arrayName, index){
+        tr.classList.add('editing-row');
+        tr._original = tr.innerHTML; // keep snapshot for cancel
+        // convert each td with data-field into inputs/selects
+        const tds = tr.querySelectorAll('td');
+        tds.forEach(td => {
+          const field = td.getAttribute('data-field');
+          if(!field) return; // actions or aviso column
+          const val = td.innerText;
+          let input;
+          // determine input type by field
+          if(arrayName === 'clientes'){
+            if(field === 'docTipo'){
+              input = document.createElement('select');
+              const optCpf = document.createElement('option'); optCpf.value='cpf'; optCpf.text='CPF';
+              const optCnpj = document.createElement('option'); optCnpj.value='cnpj'; optCnpj.text='CNPJ';
+              input.appendChild(optCpf); input.appendChild(optCnpj);
+              input.value = (val.toLowerCase().indexOf('cnpj')>-1) ? 'cnpj' : 'cpf';
+            } else {
+              input = document.createElement('input'); input.type='text'; input.value = val;
+            }
+          } else if(arrayName === 'mpList'){
+            if(field === 'saldo' || field === 'preco'){
+              input = document.createElement('input'); input.type='number'; input.step = (field==='preco' ? '0.01' : '1'); input.value = val.replace(/[^\d\.\-]/g,'') || 0;
+            } else if(field === 'unidade'){
+              input = document.createElement('select');
+              const o1 = document.createElement('option'); o1.value='kg'; o1.text='kg';
+              const o2 = document.createElement('option'); o2.value='unidade'; o2.text='unidade';
+              input.appendChild(o1); input.appendChild(o2);
+              input.value = val;
+            } else {
+              input = document.createElement('input'); input.type='text'; input.value = val;
+            }
+          } else if(arrayName === 'pedidos'){
+            if(field === 'kg' || field === 'precoKg' || field === 'custo'){
+              input = document.createElement('input'); input.type='number'; input.step = (field==='precoKg' || field==='custo' ? '0.01' : '1'); input.value = val.replace(/[^\d\.\-]/g,'') || 0;
+            } else if(field === 'cliente'){
+              // create select of clients
+              input = document.createElement('select');
+              const placeholder = document.createElement('option'); placeholder.value='-1'; placeholder.text='-- Selecionar cliente --'; placeholder.disabled=true;
+              input.appendChild(placeholder);
+              clientes.forEach((c,ci) => { const o = document.createElement('option'); o.value = ci; o.text = `${c.nome} (${c.doc || ''})`; input.appendChild(o); });
+              // try set selected by name match
+              const matchIdx = clientes.findIndex(c => c.nome === val);
+              input.value = matchIdx >= 0 ? matchIdx : -1;
+            } else {
+              input = document.createElement('input'); input.type='text'; input.value = val;
+            }
+          } else if(arrayName === 'financeiro'){
+            if(field === 'valor'){
+              input = document.createElement('input'); input.type='number'; input.step='0.01'; input.value = val.replace(/[^\d\.\-]/g,'') || 0;
+            } else if(field === 'tipo'){
+              input = document.createElement('select');
+              const o1 = document.createElement('option'); o1.value='entrada'; o1.text='entrada';
+              const o2 = document.createElement('option'); o2.value='saida'; o2.text='saida';
+              input.appendChild(o1); input.appendChild(o2);
+              input.value = val.toLowerCase();
+            } else {
+              input = document.createElement('input'); input.type='text'; input.value = val;
+            }
+          } else {
+            // fallback
+            input = document.createElement('input'); input.type='text'; input.value = val;
+          }
+          // replace cell content
+          td.innerHTML = '';
+          td.appendChild(input);
+          // if select, init Materialize after a tick
+          if(input.tagName.toLowerCase() === 'select'){
+            setTimeout(()=> M.FormSelect.init(input), 0);
+          }
+        });
+
+        // replace actions cell: show Save and Cancel buttons
+        const actionsTd = tr.querySelector('td:last-child');
+        actionsTd._old = actionsTd.innerHTML;
+        actionsTd.innerHTML = `
+          <button class="btn-small green small-action" data-action="save"><span class="material-icons">save</span></button>
+          <button class="btn-small grey" data-action="cancel"><span class="material-icons">close</span></button>
+        `;
+        actionsTd.querySelector('[data-action="save"]').onclick = () => saveRowEdits(tr, arrayName, index);
+        actionsTd.querySelector('[data-action="cancel"]').onclick = () => cancelRowEdits(tr);
+      }
+
+      function cancelRowEdits(tr){
+        if(tr._original) tr.innerHTML = tr._original;
+        tr.classList.remove('editing-row');
+      }
+
+      function saveRowEdits(tr, arrayName, index){
+        // build updated object based on inputs
+        const cells = tr.querySelectorAll('td');
+        const updated = {}; // temporary
+        cells.forEach(td => {
+          const field = td.getAttribute('data-field');
+          if(!field) return;
+          const child = td.firstElementChild;
+          if(!child) return;
+          if(child.tagName.toLowerCase() === 'select'){
+            updated[field] = child.value;
+          } else if(child.tagName.toLowerCase() === 'input'){
+            if(child.type === 'number'){
+              updated[field] = child.value === '' ? 0 : Number(child.value);
+            } else {
+              updated[field] = child.value;
+            }
+          } else {
+            updated[field] = child.innerText || child.value || '';
+          }
+        });
+
+        // update the correct array
+        if(arrayName === 'clientes'){
+          const obj = clientes[index] || {};
+          // map updated keys (docTipo should be 'cpf'/'cnpj')
+          if(updated.nome !== undefined) obj.nome = String(updated.nome).trim();
+          if(updated.docTipo !== undefined) obj.docTipo = (String(updated.docTipo).toLowerCase() === 'cnpj' ? 'cnpj' : 'cpf');
+          if(updated.doc !== undefined) obj.doc = String(updated.doc).trim();
+          if(updated.tel !== undefined) obj.tel = String(updated.tel).trim();
+          if(updated.email !== undefined) obj.email = String(updated.email).trim();
+          if(updated.cep !== undefined) obj.cep = String(updated.cep).trim();
+          if(updated.endereco !== undefined) obj.endereco = String(updated.endereco).trim();
+          if(updated.numero !== undefined) obj.numero = String(updated.numero).trim();
+          if(updated.complemento !== undefined) obj.complemento = String(updated.complemento).trim();
+          clientes[index] = obj;
+          salvarLS('clientes', clientes);
+          atualizarClientes();
+          atualizarPedidos(); // update names in pedidos table
+        } else if(arrayName === 'mpList'){
+          const obj = mpList[index] || {};
+          if(updated.tipo !== undefined) obj.tipo = String(updated.tipo).trim();
+          if(updated.saldo !== undefined) obj.saldo = Number(updated.saldo) || 0;
+          if(updated.preco !== undefined) obj.preco = Number(updated.preco) || 0;
+          if(updated.unidade !== undefined) obj.unidade = String(updated.unidade).trim();
+          mpList[index] = obj;
+          salvarLS('mpList', mpList);
+          atualizarMPCadastro();
+        } else if(arrayName === 'pedidos'){
+          const obj = pedidos[index] || {};
+          if(updated.cliente !== undefined){
+            const idx = Number(updated.cliente);
+            if(!isNaN(idx) && clientes[idx]) obj.clienteIdx = idx;
+            else {
+              // try match by name
+              const found = clientes.findIndex(c=>c.nome === String(updated.cliente).trim());
+              if(found >= 0) obj.clienteIdx = found;
+            }
+          }
+          if(updated.kg !== undefined) obj.kg = Number(updated.kg) || 0;
+          if(updated.precoKg !== undefined) obj.precoKg = Number(updated.precoKg) || 0;
+          if(updated.custo !== undefined) obj.custo = Number(updated.custo) || 0;
+          if(updated.vencimento !== undefined) obj.vencimento = String(updated.vencimento).trim();
+          pedidos[index] = obj;
+          salvarLS('pedidos', pedidos);
+          atualizarPedidos();
+        } else if(arrayName === 'financeiro'){
+          const obj = financeiro[index] || {};
+          if(updated.tipo !== undefined) obj.tipo = String(updated.tipo).trim();
+          if(updated.desc !== undefined) obj.desc = String(updated.desc).trim();
+          if(updated.valor !== undefined) obj.valor = Number(updated.valor) || 0;
+          if(updated.vencimento !== undefined) obj.vencimento = String(updated.vencimento).trim();
+          financeiro[index] = obj;
+          salvarLS('financeiro', financeiro);
+          atualizarFinanceiro();
+          calcularSaldo();
+        }
+
+        // finalize: remove editing visuals
+        tr.classList.remove('editing-row');
+      }
+
+      // Helper escape for HTML content injection
+      function escapeHTML(s){ if(s === null || s === undefined) return ''; return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; }); }
+
+      // INITIAL RENDER
+      atualizarClientes();
+      atualizarMPCadastro();
+      atualizarPedidos();
+      atualizarFinanceiro();
+      atualizarEstoque();
+      calcularSaldo();
+
+      // Expose some functions globally used in inline buttons
+      window.atualizarClientes = atualizarClientes;
+      window.atualizarMPCadastro = atualizarMPCadastro;
+      window.atualizarPedidos = atualizarPedidos;
+      window.atualizarFinanceiro = atualizarFinanceiro;
+      window.atualizarEstoque = atualizarEstoque;
+      window.calcularSaldo = calcularSaldo;
     });
   </script>
 </body>
