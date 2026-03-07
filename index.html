@@ -11,27 +11,79 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
   <style>
-    body { font-family: 'Roboto', Arial, sans-serif; background: #f3f3f3; }
-    nav { box-shadow: 0px 2px 8px #455a6460;}
-    .brand-logo { font-weight:500; }
-    /* Wider container so tables can be displayed horizontally */
-    .container { max-width:1200px; width:98vw; margin:auto; }
-    @media (max-width:900px) {
-      .container { width:100vw; max-width:100vw; padding:0; }
-      th, td { font-size:0.95em;}
-      form .row .input-field { margin-bottom:6px;}
-      .nav-wrapper{padding:0 4px;}
+    /* ---- Estilo inspirado em SAP Clássico (tons neutros) + mobile friendly ---- */
+    :root{
+      --sap-bg:#f3f3f3;
+      --sap-header:#0f4c81; /* azul escuro */
+      --sap-side:#e6e6d8; /* bege claro */
+      --sap-panel:#fbfbf7;
+      --sap-accent:#006699;
+      --sap-text:#222;
     }
-    .card-content { min-height: 120px; }
-    .card-action { padding: 0 16px 16px 16px; }
+    html,body { height:100%; }
+    body { font-family: 'Roboto', Arial, sans-serif; background: var(--sap-bg); color:var(--sap-text); -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color: transparent; }
+    nav { background:var(--sap-header); box-shadow:none; height:56px; line-height:56px; }
+    .brand-logo { font-weight:600; font-size:1.05rem; color:#fff; }
+    .nav-wrapper .material-icons { color:#fff; }
+    .container { max-width:1200px; width:98vw; margin:auto; padding-top:12px;}
+    .card-panel { background:var(--sap-panel); box-shadow: 0 1px 0 rgba(0,0,0,0.12);}
+    .section-h { margin:18px 3px 8px 3px; font-size:1.05em; font-weight:600; color:#333; }
+    .scroll-table { overflow-x:auto; margin-bottom:12px; background:transparent; border:1px solid #ddd; border-radius:6px; padding:6px;}
+    table th, table td { min-width:120px; padding:8px 10px; }
+    th { background:#efefef; color:#111; font-weight:600; }
     .floating-action-btn { position:fixed; bottom:16px; right:16px; z-index:99; display:flex; gap:12px;}
-    .section-h { margin:24px 3px 16px 3px; font-size:1.18em; font-weight:500; }
-    .scroll-table { overflow-x:auto; margin-bottom:12px; }
-    .table-filter { margin:6px 0 10px 0; padding:6px; width:100%; max-width:420px; display:block; }
-    .editing-row { background:#fffde7; }
-    table th, table td { min-width:140px; } /* force horizontal scroll on narrow screens */
-    td[contenteditable="true"] { background: #fffbe6; outline: none; }
+    /* SAP-like left side menu (dinâmico) */
+    #sideTrigger{
+      position:fixed; left:0; top:56px; width:36px; height:56px; background:var(--sap-side); border-right:1px solid #d0d0c0;
+      display:flex; align-items:center; justify-content:center; z-index:160;
+      cursor:pointer; border-top-right-radius:6px; border-bottom-right-radius:6px;
+      transition: background .15s;
+      touch-action: manipulation;
+    }
+    #sideTrigger .material-icons { font-size:22px; color:#333; }
+    #sideTrigger:active { background:#dedecb; }
+    #sideMenu{
+      position:fixed; left:0; top:56px; height:calc(100% - 56px); width:260px;
+      transform:translateX(-220px); transition: transform .18s ease-in-out;
+      background:var(--sap-side); border-right:1px solid #d0d0c0; z-index:159;
+      padding-top:8px; border-top-right-radius:6px; border-bottom-right-radius:6px;
+      -webkit-overflow-scrolling: touch;
+    }
+    /* overlay for mobile */
+    #menuOverlay{
+      position:fixed; left:0; top:56px; width:100%; height:calc(100% - 56px); background:rgba(0,0,0,0.32);
+      z-index:158; opacity:0; pointer-events:none; transition:opacity .18s;
+    }
+    #menuOverlay.visible { opacity:1; pointer-events:auto; }
+
+    #sideMenu.open{ transform:translateX(0); }
+    #sideMenu ul { margin:0; padding:6px 6px; max-height:100%; overflow:auto; }
+    #sideMenu li { list-style:none; margin:6px 0; cursor:pointer; padding:12px 10px; border-radius:6px; display:flex; gap:10px; align-items:center; color:#222; font-size:0.98rem; }
+    #sideMenu li:hover { background:#e0e0d0; }
+    #sideMenu .item-icon { width:34px; text-align:center; color:#0f4c81; }
+
+    /* mobile-friendly touch targets */
+    .btn-small { min-width:40px; min-height:36px; padding:6px; }
     .small-action { margin-right:6px; }
+
+    .editing-row { background:#fffde7 !important; }
+    td[contenteditable="true"] { background: #fffbe6; outline: none; }
+
+    /* Responsive tweaks */
+    @media (max-width:900px) {
+      .container { width:100vw; max-width:100vw; padding:8px; }
+      th, td { font-size:0.95em; padding:10px 12px; }
+      /* On mobile the side menu becomes an overlay full-height, accessible by tap & swipe */
+      #sideMenu { width:84vw; transform:translateX(-84vw); left:0; }
+      #sideMenu.open { transform:translateX(0); }
+      #sideTrigger { left:8px; top:8px; width:44px; height:44px; border-radius:8px; }
+      #sideTrigger .material-icons { font-size:24px; }
+      #menuOverlay { top:0; height:100vh; }
+    }
+
+    /* highlight-target helper */
+    .highlight-target { box-shadow: inset 0 0 0 3px rgba(0,102,153,0.08); transition: box-shadow .6s ease; }
+
   </style>
 </head>
 <body class="grey lighten-5">
@@ -39,13 +91,30 @@
   <nav class="blue">
     <div class="nav-wrapper">
       <span class="material-icons left" style="margin-left:8px;margin-top:15px;">store</span>
-      <a href="#" class="brand-logo center">Pedidos & Estoque</a>
+      <a href="#" class="brand-logo center">SAP-Style • Pedidos & Estoque</a>
     </div>
+  </nav>
+
+  <!-- Side menu trigger and menu -->
+  <div id="sideTrigger" title="Abrir menu" aria-hidden="false" role="button" tabindex="0">
+    <span class="material-icons">menu</span>
+  </div>
+  <div id="menuOverlay" aria-hidden="true"></div>
+  <nav id="sideMenu" aria-label="Menu lateral">
+    <ul>
+      <li data-target="formCliente"><span class="item-icon"><span class="material-icons">person</span></span><span>Cadastro de Cliente</span></li>
+      <li data-target="formCadastroMP"><span class="item-icon"><span class="material-icons">category</span></span><span>Cadastro de Produto (MP)</span></li>
+      <li data-target="mpCards"><span class="item-icon"><span class="material-icons">inventory_2</span></span><span>Minhas MPs</span></li>
+      <li data-target="estoqueTable"><span class="item-icon"><span class="material-icons">storefront</span></span><span>Estoque Atual</span></li>
+      <li data-target="formPedidoSection"><span class="item-icon"><span class="material-icons">post_add</span></span><span>Novo Pedido</span></li>
+      <li data-target="financeiroTable"><span class="item-icon"><span class="material-icons">attach_money</span></span><span>Financeiro</span></li>
+      <li data-target="pedidosTable"><span class="item-icon"><span class="material-icons">assignment</span></span><span>Pedidos</span></li>
+    </ul>
   </nav>
 
   <div class="container">
 
-    <!-- CLIENTE FORM (unchanged) -->
+    <!-- CLIENTE FORM -->
     <div class="section-h">Cadastro de Cliente</div>
     <form id="formCliente" class="card-panel z-depth-1">
       <div class="row">
@@ -61,13 +130,13 @@
           <label for="clienteDocTipo">Tipo de Doc</label>
         </div>
         <div class="input-field col s6 m3">
-          <input id="clienteDoc" type="text" required>
+          <input id="clienteDoc" type="text" required maxlength="18" placeholder="">
           <label for="clienteDoc">CPF/CNPJ</label>
         </div>
       </div>
       <div class="row">
         <div class="input-field col s4">
-          <input id="clienteTel" type="text">
+          <input id="clienteTel" type="text" maxlength="15" placeholder="">
           <label for="clienteTel">Telefone</label>
         </div>
         <div class="input-field col s8">
@@ -135,15 +204,15 @@
     <form id="formCadastroMP" class="card-panel z-depth-1">
       <input type="hidden" id="mpEditIdx" value="-1">
       <div class="row">
-        <div class="input-field col s4">
+        <div class="input-field col s12 m4">
           <input id="mpTipo" type="text" required>
           <label for="mpTipo">Tipo</label>
         </div>
-        <div class="input-field col s4">
+        <div class="input-field col s6 m4">
           <input id="mpQtd" type="number" min="0" required>
           <label for="mpQtd">Qtd</label>
         </div>
-        <div class="input-field col s4">
+        <div class="input-field col s6 m4">
           <input id="mpPreco" type="number" min="0.01" step="0.01" required>
           <label for="mpPreco">Preço</label>
         </div>
@@ -168,7 +237,7 @@
       </div>
     </form>
 
-    <!-- MP Cards (unchanged) -->
+    <!-- MP Cards -->
     <div class="section-h">Minhas MPs</div>
     <div id="mpCards" class="row" style="margin-bottom: 18px;"></div>
 
@@ -190,21 +259,21 @@
       </table>
     </div>
 
-    <!-- Movimentação MP form (unchanged) -->
+    <!-- Movimentação MP form -->
     <div class="section-h">Movimentar MP</div>
     <form class="card-panel z-depth-1">
       <div class="row">
-        <div class="input-field col s5">
+        <div class="input-field col s12 m5">
           <select id="nomeMP">
             <option value="" disabled selected>Escolha a MP</option>
           </select>
           <label for="nomeMP">MP</label>
         </div>
-        <div class="input-field col s3">
+        <div class="input-field col s6 m3">
           <input id="qtdMP" type="number" min="1">
           <label id="qtdMPLab" for="qtdMP">Quantidade</label>
         </div>
-        <div class="input-field col s4">
+        <div class="input-field col s6 m4">
           <select id="opMP">
             <option value="entrada">Entrada</option>
             <option value="saida">Saída</option>
@@ -236,45 +305,68 @@
       </table>
     </div>
 
-    <!-- Pedido form (unchanged) -->
+    <!-- Pedido form (produto, data do pedido, vencimento 'à vista') -->
     <div class="section-h">Novo Pedido</div>
-    <form class="card-panel z-depth-1">
+    <form id="formPedidoSection" class="card-panel z-depth-1">
+      <input type="hidden" id="pedidoEditIdx" value="-1">
       <div class="row">
-        <div class="input-field col s6">
+        <div class="input-field col s12 m6">
           <select id="pedidoCliente">
             <option value="" disabled selected>Selecione</option>
           </select>
           <label for="pedidoCliente">Cliente</label>
         </div>
-        <div class="input-field col s6">
+        <div class="input-field col s12 m6">
           <input id="pedidoKg" type="number" min="0.01" step="0.01">
           <label for="pedidoKg">Qtd (kg)</label>
         </div>
       </div>
       <div class="row">
-        <div class="input-field col s5">
+        <div class="input-field col s12 m4">
+          <select id="pedidoProduto">
+            <option value="" disabled selected>Selecione o produto</option>
+            <option value="CURE FILM H">CURE FILM H</option>
+            <option value="CURE FILM HC">CURE FILM HC</option>
+            <option value="HARDSURF H">HARDSURF H</option>
+            <option value="HARDSURF HC">HARDSURF HC</option>
+          </select>
+          <label for="pedidoProduto">Produto</label>
+        </div>
+        <div class="input-field col s12 m4">
           <input id="pedidoPrecoKg" type="number" min="0.01" step="0.01">
           <label for="pedidoPrecoKg">Preço/kg (R$)</label>
         </div>
-        <div class="input-field col s5">
+        <div class="input-field col s12 m4">
           <input id="pedidoCusto" type="number" readonly>
           <label for="pedidoCusto">Custo Final (R$)</label>
         </div>
-        <div class="input-field col s2">
+      </div>
+      <div class="row">
+        <div class="input-field col s12 m4">
+          <input id="pedidoData" type="date">
+          <label for="pedidoData" class="active">Data do Pedido</label>
+        </div>
+        <div class="input-field col s12 m4">
           <select id="pedidoVenc">
             <option value="" disabled selected>Vencimento</option>
             <option value="7">7d</option>
             <option value="14">14d</option>
             <option value="21">21d</option>
             <option value="28">28d</option>
+            <option value="avista">À vista</option>
           </select>
           <label for="pedidoVenc">Venc.</label>
         </div>
+        <div class="input-field col s12 m4" style="display:flex;gap:8px;">
+          <button class="btn blue" type="button" id="btnPedido" style="flex:1">Registrar Pedido</button>
+          <button type="button" id="btnCancelarEditPedido" class="btn grey" style="display:none;flex:1">
+            <span class="material-icons left">close</span> Cancelar
+          </button>
+        </div>
       </div>
-      <button class="btn blue" type="button" id="btnPedido" style="width:100%;margin-top:8px;">Registrar Pedido</button>
     </form>
 
-    <!-- Pedidos table + filter -->
+    <!-- Pedidos table + filter (Produto, DataPedido) -->
     <div class="section-h">Pedidos</div>
     <input id="filterPedidos" class="table-filter" placeholder="Filtrar pedidos..." />
     <div class="scroll-table">
@@ -283,9 +375,11 @@
           <tr>
             <th>Cliente</th>
             <th>CPF/CNPJ</th>
+            <th>Produto</th>
             <th>Kgs</th>
             <th>Preço/kg</th>
             <th>Custo</th>
+            <th>Data Pedido</th>
             <th>Vencimento</th>
             <th>Ações</th>
           </tr>
@@ -298,15 +392,15 @@
     <div class="section-h">Financeiro</div>
     <form class="card-panel z-depth-1">
       <div class="row">
-        <div class="input-field col s6">
+        <div class="input-field col s12 m6">
           <input id="finDesc" type="text">
           <label for="finDesc">Descrição</label>
         </div>
-        <div class="input-field col s3">
+        <div class="input-field col s12 m3">
           <input id="finValor" type="number" step="0.01">
           <label for="finValor">Valor (R$)</label>
         </div>
-        <div class="input-field col s3">
+        <div class="input-field col s12 m3">
           <select id="finTipo">
             <option value="entrada">Entrada</option>
             <option value="saida">Saída</option>
@@ -375,6 +469,119 @@
       let financeiro = lerLS('financeiro', []);
       let editClienteIndex = null;
 
+      // ---------- SIDE MENU BEHAVIOR (desktop hover + mobile tap + swipe) ----------
+      const sideMenu = document.getElementById('sideMenu');
+      const sideTrigger = document.getElementById('sideTrigger');
+      const menuOverlay = document.getElementById('menuOverlay');
+
+      function openMenu(){
+        sideMenu.classList.add('open');
+        menuOverlay.classList.add('visible');
+        menuOverlay.setAttribute('aria-hidden', 'false');
+      }
+      function closeMenu(){
+        sideMenu.classList.remove('open');
+        menuOverlay.classList.remove('visible');
+        menuOverlay.setAttribute('aria-hidden', 'true');
+      }
+      // Desktop hover behavior
+      sideTrigger.addEventListener('mouseenter', ()=> {
+        if(window.innerWidth > 900) openMenu();
+      });
+      sideMenu.addEventListener('mouseenter', ()=> { if(window.innerWidth > 900) openMenu(); });
+      sideMenu.addEventListener('mouseleave', ()=> { if(window.innerWidth > 900) closeMenu(); });
+
+      // Toggle on click/tap (mobile & desktop)
+      sideTrigger.addEventListener('click', (e)=> {
+        if(sideMenu.classList.contains('open')) closeMenu(); else openMenu();
+      });
+      sideTrigger.addEventListener('keydown', (e)=> { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sideTrigger.click(); } });
+
+      // Overlay click closes menu
+      menuOverlay.addEventListener('click', closeMenu);
+
+      // Swipe gestures: open when swiping right from very left edge; close when swiping left on opened menu
+      let touchStartX = 0, touchStartY = 0;
+      document.addEventListener('touchstart', function(e){
+        const t = e.touches[0];
+        touchStartX = t.clientX;
+        touchStartY = t.clientY;
+      }, {passive:true});
+      document.addEventListener('touchend', function(e){
+        if(!touchStartX) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - touchStartX;
+        const dy = Math.abs(t.clientY - touchStartY);
+        // ignore vertical swipes
+        if(dy > 60) { touchStartX = 0; return; }
+        // open menu: swipe right from very left edge
+        if(touchStartX < 30 && dx > 60) openMenu();
+        // close menu: if menu open and swipe left
+        if(sideMenu.classList.contains('open') && dx < -60) closeMenu();
+        touchStartX = 0;
+      }, {passive:true});
+
+      // on click of item scroll to section and hide
+      sideMenu.querySelectorAll('li[data-target]').forEach(li=>{
+        li.addEventListener('click', e=>{
+          const tgt = document.getElementById(li.dataset.target) || document.querySelector(`#${li.dataset.target}`);
+          if(tgt){
+            tgt.scrollIntoView({behavior:'smooth', block:'start'});
+            // highlight briefly
+            tgt.classList.add('highlight-target');
+            setTimeout(()=> tgt.classList.remove('highlight-target'), 1200);
+          }
+          closeMenu();
+        });
+      });
+
+      // ---------- Helpers: Masks para CPF/CNPJ/Telefone ----------
+      function onlyDigits(v){ return v.replace(/\D/g,''); }
+      function maskCPF(v){
+        v = onlyDigits(v).slice(0,11);
+        v = v.replace(/(\d{3})(\d)/, '$1.$2');
+        v = v.replace(/(\d{3})(\d)/, '$1.$2');
+        v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+        return v;
+      }
+      function maskCNPJ(v){
+        v = onlyDigits(v).slice(0,14);
+        v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+        v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        v = v.replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+        return v;
+      }
+      function maskPhone(v){
+        v = onlyDigits(v);
+        if(v.length > 11) v = v.slice(0,11);
+        if(v.length <= 10){
+          v = v.replace(/^(\d{2})(\d)/, '($1) $2');
+          v = v.replace(/(\d{4})(\d)/, '$1-$2');
+        } else {
+          v = v.replace(/^(\d{2})(\d)/, '($1) $2');
+          v = v.replace(/(\d{5})(\d)/, '$1-$2');
+        }
+        return v;
+      }
+
+      const clienteDocTipoEl = document.getElementById('clienteDocTipo');
+      const clienteDocEl = document.getElementById('clienteDoc');
+      const clienteTelEl = document.getElementById('clienteTel');
+
+      function applyDocMask(){
+        const tipo = clienteDocTipoEl.value;
+        let v = clienteDocEl.value || '';
+        if(tipo === 'cnpj') clienteDocEl.value = maskCNPJ(v);
+        else clienteDocEl.value = maskCPF(v);
+      }
+      clienteDocTipoEl.addEventListener('change', ()=>{
+        applyDocMask();
+        M.FormSelect.init(clienteDocTipoEl);
+      });
+      clienteDocEl.addEventListener('input', ()=> applyDocMask());
+      clienteTelEl.addEventListener('input', ()=> { clienteTelEl.value = maskPhone(clienteTelEl.value); });
+
       // ---------- CLIENTES ----------
       function atualizarClientes() {
         salvarLS('clientes', clientes);
@@ -395,9 +602,9 @@
             <td data-field="numero">${escapeHTML(c.numero || "")}</td>
             <td data-field="complemento">${escapeHTML(c.complemento || "")}</td>
             <td>
-              <button class="btn-small orange small-action" onclick="editarCliente(${i})"><span class="material-icons">edit</span></button>
-              <button class="btn-small blue small-action" onclick="editRow('clientes', ${i}, this)"><span class="material-icons">edit_attributes</span></button>
-              <button class="btn-small red" onclick="excluirCliente(${i})"><span class="material-icons">delete</span></button>
+              <button class="btn-small orange small-action" onclick="editarCliente(${i})" title="Editar cliente"><span class="material-icons">edit</span></button>
+              <button class="btn-small blue small-action" onclick="editRow('clientes', ${i}, this)" title="Editar inline"><span class="material-icons">edit_attributes</span></button>
+              <button class="btn-small red" onclick="excluirCliente(${i})" title="Excluir"><span class="material-icons">delete</span></button>
             </td>
           `;
           tbody.appendChild(tr);
@@ -423,14 +630,15 @@
         editClienteIndex = idx;
         M.updateTextFields();
         M.FormSelect.init(document.getElementById('clienteDocTipo'));
+        // on mobile, scroll form into view for easier editing
+        document.getElementById('formCliente').scrollIntoView({behavior:'smooth', block:'center'});
       }
       window.excluirCliente = function(idx) {
         if(!confirm("Confirma exclusão?")) return;
         clientes.splice(idx,1);
         atualizarClientes();
-        // update dependent lists
         salvarLS('clientes', clientes);
-        atualizarPedidos(); // pedidos reference may change visually but indices should remain consistent
+        atualizarPedidos();
       }
       document.getElementById('formCliente').onsubmit = function(e){
         e.preventDefault();
@@ -452,9 +660,11 @@
           clientes.push(clienteObj);
         }
         document.getElementById('formCliente').reset();
+        M.updateTextFields();
         atualizarClientes();
         M.toast({html:"Cliente salvo!"});
       }
+
       document.getElementById('buscarCEP').onclick = async function(){
         const cep = document.getElementById('clienteCEP').value.replace(/\D/g,'');
         if(cep.length != 8) return M.toast({html:"CEP inválido!"});
@@ -479,14 +689,14 @@
             <div class="col s12 m6">
               <div class="card z-depth-2 ${color} lighten-4" style="padding: 12px; margin-bottom:10px;">
                 <div class="card-content">
-                  <span class="card-title ${color}-text text-darken-4" style="font-size:1.2em;"><b>${escapeHTML(mp.tipo)}</b></span>
+                  <span class="card-title ${color}-text text-darken-4" style="font-size:1.1em;"><b>${escapeHTML(mp.tipo)}</b></span>
                   <p>Saldo: <b>${mp.saldo} ${tipoVisual}</b></p>
                   <p>Preço: <b>R$ ${Number(mp.preco).toFixed(2)}/${tipoVisual}</b></p>
-                  <p>Tipo: <b>${tipoVisual}</b></p>
                 </div>
                 <div class="card-action">
-                  <button class="btn-small orange" onclick="editarMP(${i})"><span class="material-icons">edit</span></button>
-                  <button class="btn-small red" onclick="excluirMP(${i})"><span class="material-icons">delete</span></button>
+                  <button class="btn-small orange" onclick="editarMP(${i})" title="Editar"><span class="material-icons">edit</span></button>
+                  <button class="btn-small blue" onclick="editRow('mpList', ${i}, this)" title="Editar inline"><span class="material-icons">edit_attributes</span></button>
+                  <button class="btn-small red" onclick="excluirMP(${i})" title="Excluir"><span class="material-icons">delete</span></button>
                 </div>
               </div>
             </div>
@@ -506,9 +716,9 @@
             <td data-field="preco">${Number(mp.preco).toFixed(2)}</td>
             <td data-field="unidade">${escapeHTML(mp.unidade)}</td>
             <td>
-              <button class="btn-small orange small-action" onclick="editarMP(${i})"><span class="material-icons">edit</span></button>
-              <button class="btn-small blue small-action" onclick="editRow('mpList', ${i}, this)"><span class="material-icons">edit_attributes</span></button>
-              <button class="btn-small red" onclick="excluirMP(${i})"><span class="material-icons">delete</span></button>
+              <button class="btn-small blue small-action" onclick="editarMP(${i})" title="Editar"><span class="material-icons">edit</span></button>
+              <button class="btn-small teal small-action" onclick="editRow('mpList', ${i}, this)" title="Editar inline"><span class="material-icons">edit_attributes</span></button>
+              <button class="btn-small red" onclick="excluirMP(${i})" title="Excluir"><span class="material-icons">delete</span></button>
             </td>
           `;
           tbody.appendChild(tr);
@@ -528,6 +738,7 @@
         M.FormSelect.init(document.getElementById('mpUnidade'));
         document.getElementById('btnSalvarMP').textContent = "Salvar Alteração";
         document.getElementById('btnCancelarEditMP').style.display = "";
+        document.getElementById('formCadastroMP').scrollIntoView({behavior:'smooth', block:'center'});
       }
       window.excluirMP = function(idx){
         if(!confirm("Confirma exclusão?")) return;
@@ -575,11 +786,11 @@
           const color = i % 2 === 0 ? 'blue' : 'teal';
           const tipoVisual = mp.unidade === 'kg' ? 'kg' : 'unidade';
           container.innerHTML += `
-            <div class="col s6 m6">
-              <div class="card ${color} lighten-4 z-depth-1 center-align" style="padding:9px;">
-                <span class="${color}-text text-darken-3" style="font-size:1.2em"><b>${escapeHTML(mp.tipo)}</b></span><br>
-                <span style="font-size:1.3em">${mp.saldo} ${tipoVisual}</span><br>
-                <span style="font-size:0.9em;">R$ ${Number(mp.preco).toFixed(2)}/${tipoVisual}</span>
+            <div class="col s12 m6">
+              <div class="card ${color} lighten-4 z-depth-1 center-align" style="padding:9px;margin-bottom:10px;">
+                <span class="${color}-text text-darken-3" style="font-size:1.05em"><b>${escapeHTML(mp.tipo)}</b></span><br>
+                <span style="font-size:1.1em">${mp.saldo} ${tipoVisual}</span><br>
+                <span style="font-size:0.88em;">R$ ${Number(mp.preco).toFixed(2)}/${tipoVisual}</span>
               </div>
             </div>
           `;
@@ -596,8 +807,11 @@
             <td data-field="preco">${Number(mp.preco).toFixed(2)}</td>
             <td data-field="unidade">${escapeHTML(mp.unidade)}</td>
             <td>
-              <button class="btn-small blue small-action" onclick="editRow('mpList', ${i}, this)"><span class="material-icons">edit_attributes</span></button>
-              <button class="btn-small red" onclick="excluirEstoque(${i})"><span class="material-icons">delete</span></button>
+              <!-- Pencil opens full MP edit form -->
+              <button class="btn-small blue small-action" onclick="editarMP(${i})" title="Editar"><span class="material-icons">edit</span></button>
+              <!-- Inline editor still available -->
+              <button class="btn-small teal small-action" onclick="editRow('mpList', ${i}, this)" title="Editar inline"><span class="material-icons">edit_attributes</span></button>
+              <button class="btn-small red" onclick="excluirEstoque(${i})" title="Excluir"><span class="material-icons">delete</span></button>
             </td>
           `;
           tbody.appendChild(tr);
@@ -654,7 +868,7 @@
         document.getElementById('pedidoCusto').value = (kg*preco).toFixed(2);
       }
       document.getElementById('pedidoKg').oninput = atualizarCustoPedido;
-      document.getElementById('pedidoPrecoKg').oninput = atualizarCustoPedido;
+      document.getElementById('pedidoPrecoKg').oninput = function(){ atualizarCustoPedido(); };
 
       function atualizarPedidos(){
         salvarLS('pedidos', pedidos);
@@ -665,52 +879,145 @@
           tr.innerHTML = `
             <td data-field="cliente">${escapeHTML(c.nome || "")}</td>
             <td data-field="documento">${escapeHTML(c.doc || "")}</td>
+            <td data-field="produto">${escapeHTML(p.produto || "")}</td>
             <td data-field="kg">${p.kg}</td>
             <td data-field="precoKg">${Number(p.precoKg).toFixed(2)}</td>
             <td data-field="custo">${Number(p.custo).toFixed(2)}</td>
+            <td data-field="dataPedido">${escapeHTML(p.dataPedido || "")}</td>
             <td data-field="vencimento">${escapeHTML(p.vencimento || "")}</td>
             <td>
-              <button class="btn-small blue small-action" onclick="editRow('pedidos', ${i}, this)"><span class="material-icons">edit_attributes</span></button>
-              <button class="btn-small red" onclick="excluirPedido(${i})"><span class="material-icons">delete</span></button>
+              <!-- Pencil opens full Pedido edit form -->
+              <button class="btn-small blue small-action" onclick="editarPedido(${i})" title="Editar pedido"><span class="material-icons">edit</span></button>
+              <!-- Inline editor still available -->
+              <button class="btn-small teal small-action" onclick="editRow('pedidos', ${i}, this)" title="Editar inline"><span class="material-icons">edit_attributes</span></button>
+              <button class="btn-small red" onclick="excluirPedido(${i})" title="Excluir"><span class="material-icons">delete</span></button>
             </td>
           `;
           tbody.appendChild(tr);
         });
-        // Atualiza também o saldo total sempre que a lista de pedidos muda
         calcularSaldo();
       }
+
+      // editarPedido: abre formulário "Novo Pedido" para edição (mobile-friendly scroll)
+      window.editarPedido = function(idx){
+        const p = pedidos[idx];
+        if(!p) return;
+        document.getElementById('pedidoEditIdx').value = idx;
+        if(typeof p.clienteIdx === 'number' && p.clienteIdx >= 0){
+          document.getElementById('pedidoCliente').value = p.clienteIdx;
+        } else {
+          document.getElementById('pedidoCliente').selectedIndex = 0;
+        }
+        document.getElementById('pedidoProduto').value = p.produto || '';
+        document.getElementById('pedidoKg').value = p.kg;
+        document.getElementById('pedidoPrecoKg').value = p.precoKg;
+        document.getElementById('pedidoCusto').value = p.custo;
+        if(p.dataPedido){
+          const parts = String(p.dataPedido).split('/');
+          if(parts.length===3){
+            const iso = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+            document.getElementById('pedidoData').value = iso;
+          } else document.getElementById('pedidoData').value = '';
+        } else document.getElementById('pedidoData').value = '';
+        if(p.vencimento && String(p.vencimento).toLowerCase().includes('à vista')) {
+          document.getElementById('pedidoVenc').value = 'avista';
+        } else {
+          document.getElementById('pedidoVenc').selectedIndex = 0;
+        }
+        document.getElementById('btnPedido').textContent = 'Salvar Alteração';
+        document.getElementById('btnCancelarEditPedido').style.display = '';
+        M.FormSelect.init(document.getElementById('pedidoCliente'));
+        M.FormSelect.init(document.getElementById('pedidoProduto'));
+        M.FormSelect.init(document.getElementById('pedidoVenc'));
+        M.updateTextFields();
+        document.getElementById('formPedidoSection').scrollIntoView({behavior:'smooth', block:'center'});
+      };
+
+      // cancelar edição de pedido
+      document.getElementById('btnCancelarEditPedido').onclick = function(){
+        document.getElementById('pedidoEditIdx').value = -1;
+        document.getElementById('formPedidoSection').reset();
+        document.getElementById('btnPedido').textContent = 'Registrar Pedido';
+        document.getElementById('btnCancelarEditPedido').style.display = 'none';
+        M.FormSelect.init(document.getElementById('pedidoCliente'));
+        M.FormSelect.init(document.getElementById('pedidoProduto'));
+        M.FormSelect.init(document.getElementById('pedidoVenc'));
+        M.updateTextFields();
+      };
+
       document.getElementById('btnPedido').onclick = function(){
+        const editIdx = parseInt(document.getElementById('pedidoEditIdx').value);
         const clienteIdx = document.getElementById('pedidoCliente').value;
         const kg = parseFloat(document.getElementById('pedidoKg').value);
+        const produto = document.getElementById('pedidoProduto').value;
         const precoKg = parseFloat(document.getElementById('pedidoPrecoKg').value);
         const custo = parseFloat(document.getElementById('pedidoCusto').value);
         const venc = document.getElementById('pedidoVenc').value;
-        if(clienteIdx === "" || isNaN(kg) || kg<=0 || isNaN(precoKg) || precoKg<=0 || isNaN(custo) || custo<=0 || !venc) {
+        const dataPedidoInput = document.getElementById('pedidoData').value;
+        if(clienteIdx === "" || isNaN(kg) || kg<=0 || isNaN(precoKg) || precoKg<=0 || isNaN(custo) || custo<=0 || !venc || !produto) {
           M.toast({html:"Preencha todos os campos do pedido!"});
           return;
         }
         const hoje = new Date();
-        const vencDate = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + parseInt(venc));
-        const vencStr = `${String(vencDate.getDate()).padStart(2,'0')}/${String(vencDate.getMonth()+1).padStart(2,'0')}/${vencDate.getFullYear()}`;
-        pedidos.push({ clienteIdx: Number(clienteIdx), kg, precoKg, custo, vencimento: vencStr });
+        let vencStr = "";
+        if(venc === 'avista'){
+          vencStr = "À vista";
+        } else {
+          const days = parseInt(venc);
+          const vencDate = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + days);
+          vencStr = `${String(vencDate.getDate()).padStart(2,'0')}/${String(vencDate.getMonth()+1).padStart(2,'0')}/${vencDate.getFullYear()}`;
+        }
+        let dataPedidoStr = "";
+        if(dataPedidoInput){
+          const d = new Date(dataPedidoInput);
+          dataPedidoStr = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+        } else {
+          const d = new Date();
+          dataPedidoStr = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+        }
+
+        if(!isNaN(editIdx) && editIdx >= 0){
+          pedidos[editIdx] = {
+            clienteIdx: Number(clienteIdx),
+            produto,
+            kg,
+            precoKg,
+            custo,
+            vencimento: vencStr,
+            dataPedido: dataPedidoStr
+          };
+          salvarLS('pedidos', pedidos);
+          atualizarPedidos();
+          document.getElementById('pedidoEditIdx').value = -1;
+          document.getElementById('formPedidoSection').reset();
+          document.getElementById('btnPedido').textContent = 'Registrar Pedido';
+          document.getElementById('btnCancelarEditPedido').style.display = 'none';
+          M.FormSelect.init(document.getElementById('pedidoCliente'));
+          M.FormSelect.init(document.getElementById('pedidoProduto'));
+          M.FormSelect.init(document.getElementById('pedidoVenc'));
+          M.updateTextFields();
+          M.toast({html:"Pedido atualizado!"});
+          return;
+        }
+
+        pedidos.push({ clienteIdx: Number(clienteIdx), produto, kg, precoKg, custo, vencimento: vencStr, dataPedido: dataPedidoStr });
         salvarLS('pedidos', pedidos);
         atualizarPedidos();
-
-        // IMPORTANTE: Não registrar automaticamente como 'saida' financeiro.
-        // O saldo final agora será calculado como:
-        // saldo = soma dos custos dos pedidos (sempre positivos) + soma do financeiro (entradas +, saídas -)
-        // Se você quer um registro financeiro relacionado ao pedido, faça manualmente pelo formulário financeiro.
 
         // reset form
         document.getElementById('pedidoCliente').selectedIndex = 0;
         document.getElementById('pedidoKg').value = "";
+        document.getElementById('pedidoProduto').selectedIndex = 0;
         document.getElementById('pedidoPrecoKg').value = "";
         document.getElementById('pedidoCusto').value = "";
+        document.getElementById('pedidoData').value = "";
         document.getElementById('pedidoVenc').selectedIndex = 0;
         M.updateTextFields();
         M.FormSelect.init(document.getElementById('pedidoCliente'));
         M.FormSelect.init(document.getElementById('pedidoVenc'));
+        M.FormSelect.init(document.getElementById('pedidoProduto'));
       }
+
       window.excluirPedido = function(idx){
         if(!confirm("Confirma exclusão?")) return;
         pedidos.splice(idx,1);
@@ -726,10 +1033,13 @@
         financeiro.forEach((mov,i) => {
           let aviso = "";
           if(mov.vencimento){
-            const [d,m,y] = mov.vencimento.split('/');
-            const venc = new Date(Number(y), Number(m)-1, Number(d));
-            const diff = Math.ceil((venc - hoje)/1000/60/60/24);
-            if(diff <= 5 && diff >= 0){ aviso = `<span style="color:#b71c1c;font-weight:bold">🛈 Próximo ao vencimento!</span>`; alerta = true; }
+            const parts = mov.vencimento.split('/');
+            if(parts.length===3){
+              const [d,m,y] = parts;
+              const venc = new Date(Number(y), Number(m)-1, Number(d));
+              const diff = Math.ceil((venc - hoje)/1000/60/60/24);
+              if(diff <= 5 && diff >= 0){ aviso = `<span style="color:#b71c1c;font-weight:bold">🛈 Próximo ao vencimento!</span>`; alerta = true; }
+            }
           }
           const tr = document.createElement('tr');
           tr.innerHTML = `
@@ -777,18 +1087,14 @@
         calcularSaldo();
       }
 
-      // ---- ATUALIZE ESTA FUNÇÃO ----
-      // O saldo final é agora:
-      // saldo = soma dos custos dos pedidos (sempre positivos) + soma do financeiro (entradas +, saídas -)
+      // ---- SALDO ----
       function calcularSaldo(){
-        // Soma dos pedidos (CADA pedido é um valor positivo, ou seja, vendas aumentam o saldo)
         let saldoPedidos = 0;
         pedidos.forEach(p => {
           const custo = Number(p && p.custo ? p.custo : 0) || 0;
           if(custo > 0) saldoPedidos += custo;
         });
 
-        // Soma do financeiro (entradas +, saídas -)
         let saldoFinanceiro = 0;
         financeiro.forEach(mov => {
           const valor = Number(mov && mov.valor ? mov.valor : 0) || 0;
@@ -799,12 +1105,8 @@
         const saldoFinal = saldoPedidos + saldoFinanceiro;
         document.getElementById('saldoAtual').value = "R$ " + saldoFinal.toFixed(2);
       }
-      // ---- FIM DA ATUALIZAÇÃO ----
 
-      atualizarFinanceiro();
-      calcularSaldo();
-
-      // ---------- EXPORTAÇÃO (SheetJS) ----------
+      // ---------- EXPORTAÇÃO / IMPORTAÇÃO (SheetJS) ----------
       document.getElementById('btnExportExcel').onclick = function(){
         function toSheet(data, header) {
           const arr = [header];
@@ -818,18 +1120,17 @@
         const mpData = mpList.map(m => ({ tipo: m.tipo, saldo: m.saldo, preco: m.preco, unidade: m.unidade }));
         const pedidosData = pedidos.map(p => {
           const c = clientes[p.clienteIdx] || {};
-          return { cliente: c.nome || "", documento: c.doc || "", kg: p.kg, precoKg: p.precoKg, custo: p.custo, vencimento: p.vencimento };
+          return { cliente: c.nome || "", documento: c.doc || "", produto: p.produto || "", kg: p.kg, precoKg: p.precoKg, custo: p.custo, dataPedido: p.dataPedido || "", vencimento: p.vencimento || "" };
         });
         const financeiroData = financeiro.map(f => ({ tipo: f.tipo, desc: f.desc, valor: f.valor, vencimento: f.vencimento }));
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, toSheet(clientesData, ["nome","docTipo","doc","tel","email","cep","endereco","numero","complemento"]), "Clientes");
         XLSX.utils.book_append_sheet(wb, toSheet(mpData, ["tipo","saldo","preco","unidade"]), "Materia_Prima");
-        XLSX.utils.book_append_sheet(wb, toSheet(pedidosData, ["cliente","documento","kg","precoKg","custo","vencimento"]), "Pedidos");
+        XLSX.utils.book_append_sheet(wb, toSheet(pedidosData, ["cliente","documento","produto","kg","precoKg","custo","dataPedido","vencimento"]), "Pedidos");
         XLSX.utils.book_append_sheet(wb, toSheet(financeiroData, ["tipo","desc","valor","vencimento"]), "Financeiro");
         XLSX.writeFile(wb, "controle_pedidos.xlsx");
       };
 
-      // ---------- IMPORTAÇÃO (SheetJS) ----------
       document.getElementById('btnImportExcel').onclick = function(){ document.getElementById('inputImportExcel').click(); }
       document.getElementById('inputImportExcel').onchange = function(e){
         const file = e.target.files[0];
@@ -862,11 +1163,21 @@
             // Pedidos
             if(wb.Sheets["Pedidos"]){
               const arr = XLSX.utils.sheet_to_json(wb.Sheets["Pedidos"], { header: 1 });
-              const loaded = arr.slice(1).map(r => ({ clienteNome: r[0] || "", documento: r[1] || "", kg: Number(r[2])||0, precoKg: Number(r[3])||0, custo: Number(r[4])||0, vencimento: r[5] || "" }));
-              // try to map clienteNome/documento to clienteIdx
+              const loaded = arr.slice(1).map(r => {
+                return {
+                  clienteNome: r[0] || "",
+                  documento: r[1] || "",
+                  produto: r[2] || "",
+                  kg: Number(r[3])||0,
+                  precoKg: Number(r[4])||0,
+                  custo: Number(r[5])||0,
+                  dataPedido: r[6] || "",
+                  vencimento: r[7] || ""
+                };
+              });
               pedidos = loaded.map(l => {
                 const idx = clientes.findIndex(c => (c.nome === l.clienteNome && (c.doc || '') === (l.documento || '')));
-                return { clienteIdx: idx >= 0 ? idx : -1, kg: l.kg, precoKg: l.precoKg, custo: l.custo, vencimento: l.vencimento };
+                return { clienteIdx: idx >= 0 ? idx : -1, produto: l.produto || "", kg: l.kg, precoKg: l.precoKg, custo: l.custo, dataPedido: l.dataPedido || "", vencimento: l.vencimento || "" };
               });
               salvarLS('pedidos', pedidos);
               atualizarPedidos();
@@ -910,12 +1221,9 @@
       addFilter('filterFinanceiro','financeiroTable');
 
       // ---------- GENERIC ROW EDITOR ----------
-      // Called by edit buttons: editRow(arrayName, index, thisButton)
       window.editRow = function(arrayName, index, btn){
         const tr = btn.closest('tr');
-        // toggle edit mode
         if(tr.classList.contains('editing-row')){
-          // already editing -> should be save
           saveRowEdits(tr, arrayName, index);
           return;
         }
@@ -924,15 +1232,13 @@
 
       function startRowEdit(tr, arrayName, index){
         tr.classList.add('editing-row');
-        tr._original = tr.innerHTML; // keep snapshot for cancel
-        // convert each td with data-field into inputs/selects
+        tr._original = tr.innerHTML;
         const tds = tr.querySelectorAll('td');
         tds.forEach(td => {
           const field = td.getAttribute('data-field');
-          if(!field) return; // actions or aviso column
+          if(!field) return;
           const val = td.innerText;
           let input;
-          // determine input type by field
           if(arrayName === 'clientes'){
             if(field === 'docTipo'){
               input = document.createElement('select');
@@ -959,14 +1265,23 @@
             if(field === 'kg' || field === 'precoKg' || field === 'custo'){
               input = document.createElement('input'); input.type='number'; input.step = (field==='precoKg' || field==='custo' ? '0.01' : '1'); input.value = val.replace(/[^\d\.\-]/g,'') || 0;
             } else if(field === 'cliente'){
-              // create select of clients
               input = document.createElement('select');
               const placeholder = document.createElement('option'); placeholder.value='-1'; placeholder.text='-- Selecionar cliente --'; placeholder.disabled=true;
               input.appendChild(placeholder);
               clientes.forEach((c,ci) => { const o = document.createElement('option'); o.value = ci; o.text = `${c.nome} (${c.doc || ''})`; input.appendChild(o); });
-              // try set selected by name match
               const matchIdx = clientes.findIndex(c => c.nome === val);
               input.value = matchIdx >= 0 ? matchIdx : -1;
+            } else if(field === 'produto'){
+              input = document.createElement('select');
+              const opts = ["CURE FILM H","CURE FILM HC","HARDSURF H","HARDSURF HC"];
+              const placeholder = document.createElement('option'); placeholder.value=''; placeholder.text='-- Selecionar produto --'; placeholder.disabled=true;
+              input.appendChild(placeholder);
+              opts.forEach(pn => { const o = document.createElement('option'); o.value = pn; o.text = pn; input.appendChild(o); });
+              input.value = val || '';
+            } else if(field === 'dataPedido'){
+              input = document.createElement('input'); input.type='date';
+              const parts = val.split('/');
+              if(parts.length===3) input.value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
             } else {
               input = document.createElement('input'); input.type='text'; input.value = val;
             }
@@ -983,27 +1298,25 @@
               input = document.createElement('input'); input.type='text'; input.value = val;
             }
           } else {
-            // fallback
             input = document.createElement('input'); input.type='text'; input.value = val;
           }
-          // replace cell content
           td.innerHTML = '';
           td.appendChild(input);
-          // if select, init Materialize after a tick
           if(input.tagName.toLowerCase() === 'select'){
             setTimeout(()=> M.FormSelect.init(input), 0);
           }
         });
 
-        // replace actions cell: show Save and Cancel buttons
         const actionsTd = tr.querySelector('td:last-child');
-        actionsTd._old = actionsTd.innerHTML;
-        actionsTd.innerHTML = `
-          <button class="btn-small green small-action" data-action="save"><span class="material-icons">save</span></button>
-          <button class="btn-small grey" data-action="cancel"><span class="material-icons">close</span></button>
-        `;
-        actionsTd.querySelector('[data-action="save"]').onclick = () => saveRowEdits(tr, arrayName, index);
-        actionsTd.querySelector('[data-action="cancel"]').onclick = () => cancelRowEdits(tr);
+        if(actionsTd){
+          actionsTd._old = actionsTd.innerHTML;
+          actionsTd.innerHTML = `
+            <button class="btn-small green small-action" data-action="save"><span class="material-icons">save</span></button>
+            <button class="btn-small grey" data-action="cancel"><span class="material-icons">close</span></button>
+          `;
+          actionsTd.querySelector('[data-action="save"]').onclick = () => saveRowEdits(tr, arrayName, index);
+          actionsTd.querySelector('[data-action="cancel"]').onclick = () => cancelRowEdits(tr);
+        }
       }
 
       function cancelRowEdits(tr){
@@ -1012,9 +1325,8 @@
       }
 
       function saveRowEdits(tr, arrayName, index){
-        // build updated object based on inputs
         const cells = tr.querySelectorAll('td');
-        const updated = {}; // temporary
+        const updated = {};
         cells.forEach(td => {
           const field = td.getAttribute('data-field');
           if(!field) return;
@@ -1025,6 +1337,12 @@
           } else if(child.tagName.toLowerCase() === 'input'){
             if(child.type === 'number'){
               updated[field] = child.value === '' ? 0 : Number(child.value);
+            } else if(child.type === 'date'){
+              const v = child.value;
+              if(v){
+                const d = new Date(v);
+                updated[field] = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+              } else updated[field] = '';
             } else {
               updated[field] = child.value;
             }
@@ -1033,10 +1351,8 @@
           }
         });
 
-        // update the correct array
         if(arrayName === 'clientes'){
           const obj = clientes[index] || {};
-          // map updated keys (docTipo should be 'cpf'/'cnpj')
           if(updated.nome !== undefined) obj.nome = String(updated.nome).trim();
           if(updated.docTipo !== undefined) obj.docTipo = (String(updated.docTipo).toLowerCase() === 'cnpj' ? 'cnpj' : 'cpf');
           if(updated.doc !== undefined) obj.doc = String(updated.doc).trim();
@@ -1049,7 +1365,7 @@
           clientes[index] = obj;
           salvarLS('clientes', clientes);
           atualizarClientes();
-          atualizarPedidos(); // update names in pedidos table
+          atualizarPedidos();
         } else if(arrayName === 'mpList'){
           const obj = mpList[index] || {};
           if(updated.tipo !== undefined) obj.tipo = String(updated.tipo).trim();
@@ -1065,19 +1381,19 @@
             const idx = Number(updated.cliente);
             if(!isNaN(idx) && clientes[idx]) obj.clienteIdx = idx;
             else {
-              // try match by name
               const found = clientes.findIndex(c=>c.nome === String(updated.cliente).trim());
               if(found >= 0) obj.clienteIdx = found;
             }
           }
+          if(updated.produto !== undefined) obj.produto = String(updated.produto).trim();
           if(updated.kg !== undefined) obj.kg = Number(updated.kg) || 0;
           if(updated.precoKg !== undefined) obj.precoKg = Number(updated.precoKg) || 0;
           if(updated.custo !== undefined) obj.custo = Number(updated.custo) || 0;
+          if(updated.dataPedido !== undefined) obj.dataPedido = String(updated.dataPedido).trim();
           if(updated.vencimento !== undefined) obj.vencimento = String(updated.vencimento).trim();
           pedidos[index] = obj;
           salvarLS('pedidos', pedidos);
           atualizarPedidos();
-          // calcularSaldo será chamado dentro de atualizarPedidos()
         } else if(arrayName === 'financeiro'){
           const obj = financeiro[index] || {};
           if(updated.tipo !== undefined) obj.tipo = String(updated.tipo).trim();
@@ -1090,7 +1406,6 @@
           calcularSaldo();
         }
 
-        // finalize: remove editing visuals
         tr.classList.remove('editing-row');
       }
 
@@ -1105,7 +1420,7 @@
       atualizarEstoque();
       calcularSaldo();
 
-      // Expose some functions globally used in inline buttons
+      // Expose some functions globally used in inline buttons (keeps original behavior)
       window.atualizarClientes = atualizarClientes;
       window.atualizarMPCadastro = atualizarMPCadastro;
       window.atualizarPedidos = atualizarPedidos;
