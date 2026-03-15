@@ -467,6 +467,15 @@ in:6px 0; cursor:pointer; padding:12px 10px; border-radius:6px; display:flex; ga
           </select>
           <label for="servicoCliente">Cliente</label>
         </div>
+
+        <!-- NEW: campo Descrição do Serviço (adicionado para compatibilidade com app.js) -->
+        <div class="input-field col s12 m6">
+          <input id="servicoDesc" type="text" maxlength="255" placeholder="">
+          <label for="servicoDesc">Descrição do Serviço</label>
+        </div>
+      </div>
+
+      <div class="row">
         <div class="input-field col s12 m6">
           <input id="servicoValor" type="number" step="0.01">
           <label for="servicoValor">Valor Total (R$)</label>
@@ -901,15 +910,29 @@ in:6px 0; cursor:pointer; padding:12px 10px; border-radius:6px; display:flex; ga
         return res;
       }
 
+      function toISOIfNeeded(dateStr){
+        if(!dateStr) return '';
+        // if already ISO (YYYY-...), return as-is
+        if(/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+        // if DD/MM/YYYY convert
+        if(/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)){
+          const parts = dateStr.split('/');
+          return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+        }
+        return dateStr;
+      }
+
       function buildVencimentosInputs(n, existingDates) {
         servicoVencimentos.innerHTML = '';
         for (let i=0;i<n;i++){
           const wrapper = document.createElement('div');
           wrapper.style.minWidth = '156px';
+          const isoVal = existingDates && existingDates[i] ? toISOIfNeeded(existingDates[i]) : '';
+          // Note: add both classes for compatibility with app.js and older inline selectors
           wrapper.innerHTML = `
             <div class="input-field" style="margin:0;">
-              <input type="date" class="serv-vencimento" data-index="${i}" ${existingDates && existingDates[i] ? 'value="'+existingDates[i]+'"' : ''}>
-              <label class="active">Venc ${i+1}</label>
+              <input type="date" class="servico-venc serv-vencimento" id="servicoVenc${i}" data-index="${i}" ${isoVal ? 'value="'+isoVal+'"' : ''}>
+              <label class="active" for="servicoVenc${i}">Venc ${i+1}</label>
             </div>`;
           servicoVencimentos.appendChild(wrapper);
         }
@@ -1071,7 +1094,8 @@ in:6px 0; cursor:pointer; padding:12px 10px; border-radius:6px; display:flex; ga
         const parcelas = parseInt(document.getElementById('servicoParcelas').value || 1);
         const parcelaValorSingle = parseFloat(document.getElementById('servicoParcelaValor').value || 0);
         const desc = document.getElementById('servicoDesc') ? document.getElementById('servicoDesc').value : '';
-        const dateInputs = Array.from(document.querySelectorAll('#servicoVencimentos .serv-vencimento'));
+        // accept both classes (compat)
+        const dateInputs = Array.from(document.querySelectorAll('#servicoVencimentos .servico-venc, #servicoVencimentos .serv-vencimento'));
         const vencimentos = dateInputs.map(i=>i.value || null);
 
         const parcelaInputs = Array.from(document.querySelectorAll('.serv-parcela-valor'));
@@ -1154,6 +1178,8 @@ in:6px 0; cursor:pointer; padding:12px 10px; border-radius:6px; display:flex; ga
           document.getElementById('servicoValor').value = s.valor;
           document.getElementById('servicoParcelaValor').value = s.valorParcela || '';
           document.getElementById('servicoParcelas').value = s.parcelas;
+          // set description if present
+          if(document.getElementById('servicoDesc')) document.getElementById('servicoDesc').value = s.desc || '';
           M.FormSelect.init(document.querySelectorAll('select'));
           buildVencimentosInputs(parseInt(s.parcelas||1), s.vencimentos || []);
           const existingParcVals = (s.parcelaValores && s.parcelaValores.length) ? s.parcelaValores : null;
