@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistema com Firestore</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Lista compartilhada (Firestore)</h1>
+
+  <div class="input-row">
+    <input id="texto" placeholder="Digite algo..." />
+    <button id="btnSalvar">Salvar</button>
+  </div>
+
+  <ul id="lista"></ul>
+
+  <p class="info">Abra este endereço em outro computador ou smartphone — as alterações aparecem em tempo real.</p>
+
+  <!-- Firebase compat SDK (simples para iniciantes) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <script src="app.js"></script>
+</body>
+</html>

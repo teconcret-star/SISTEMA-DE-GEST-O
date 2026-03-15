@@ -1,0 +1,8 @@
+body { font-family: Arial, sans-serif; max-width:650px; margin:2rem auto; padding:0 1rem; }
+h1 { font-size:1.4rem; }
+.input-row { display:flex; gap:0.5rem; margin-top:1rem; }
+input { flex:1; padding:0.5rem; font-size:1rem; }
+button { padding:0.5rem 1rem; font-size:1rem; }
+ul { margin-top:1rem; padding-left:1.2rem; }
+li { margin:0.3rem 0; }
+.info { margin-top:1.2rem; color:#555; font-size:0.9rem; }
