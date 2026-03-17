@@ -218,33 +218,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   };
 
-  document.getElementById('btnMP').onclick = async function(){
-    const nomeMPId = document.getElementById('nomeMP').value;
-    const qtd = parseFloat(document.getElementById('qtdMP').value);
-    const op = document.getElementById('opMP').value;
-    if(!nomeMPId || isNaN(qtd) || qtd <= 0) return M.toast({html:"Preencha corretamente!"});
-    try {
-      const docRef = collMP.doc(nomeMPId);
-      const snap = await docRef.get();
-      if(!snap.exists) return M.toast({html:'MP não encontrada!'});
-      const mp = snap.data();
-      let newSaldo = (Number(mp.saldo) || 0);
-      if(op === 'entrada') newSaldo += qtd;
-      else {
-        if(newSaldo < qtd) return M.toast({html:"Estoque insuficiente!"});
-        newSaldo -= qtd;
-      }
-      await docRef.set({ saldo: newSaldo, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-      document.getElementById('nomeMP').selectedIndex = 0;
-      document.getElementById('qtdMP').value = "";
-      M.updateTextFields();
-      M.FormSelect.init(document.getElementById('nomeMP'));
-      M.toast({html:'Movimentação registrada!'});
-    } catch(err){
-      console.error('Erro ao movimentar MP:', err);
-      showStatus('Erro ao movimentar MP. Veja console.', true);
-    }
-  };
+  // Movimentar MP UI removed earlier — stock adjustments should be done via edição do registro de MP (form) ou import.
 
   document.getElementById('btnFinanceiro').onclick = function(){
     registrarFinanceiro();
@@ -612,7 +586,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   addFilter('filterClientes','clientesTable');
   addFilter('filterMP','mpTable');
-  addFilter('filterEstoque','estoqueTable');
   addFilter('filterPedidos','pedidosTable');
   addFilter('filterFinanceiro','financeiroTable');
   addFilter('filterServicos','servicosTable');
@@ -778,7 +751,7 @@ document.addEventListener('DOMContentLoaded', function () {
     tbody.innerHTML = "";
     const select = document.getElementById('pedidoCliente');
     const servicoSelect = document.getElementById('servicoCliente');
-    select.innerHTML = '<option value="" disabled selected>Selecione o cliente</option>';
+    if(select) select.innerHTML = '<option value="" disabled selected>Selecione o cliente</option>';
     if(servicoSelect) servicoSelect.innerHTML = '<option value="" disabled selected>Selecione o cliente</option>';
     clientes.forEach((c) => {
       const tr = document.createElement('tr');
@@ -804,49 +777,25 @@ document.addEventListener('DOMContentLoaded', function () {
       tr.appendChild(tdActions);
       tbody.appendChild(tr);
 
-      const option = document.createElement('option');
-      option.value = c.id;
-      option.text = `${c.nome} (${c.doc || ""})`;
-      select.appendChild(option);
-      if(servicoSelect) servicoSelect.appendChild(option.cloneNode(true));
+      if(select){
+        const option = document.createElement('option');
+        option.value = c.id;
+        option.text = `${c.nome} (${c.doc || ""})`;
+        select.appendChild(option);
+      }
+      if(servicoSelect){
+        const option2 = document.createElement('option');
+        option2.value = c.id;
+        option2.text = `${c.nome} (${c.doc || ""})`;
+        servicoSelect.appendChild(option2);
+      }
     });
-    M.FormSelect.init(select);
-    if(servicoSelect) M.FormSelect.init(servicoSelect);
+    M.FormSelect.init(document.querySelectorAll('#pedidoCliente, #servicoCliente'));
   }
 
   function atualizarMPCadastroUI(){
-    const container = document.getElementById('mpCards');
-    container.innerHTML = "";
-    mpList.forEach((mp) => {
-      const color = mp.unidade === 'kg' ? 'blue' : 'teal';
-      container.innerHTML += `
-        <div class="col s12 m6">
-          <div class="card z-depth-2 ${color} lighten-4" style="padding: 12px; margin-bottom:10px;">
-            <div class="card-content">
-              <span class="card-title ${color}-text text-darken-4" style="font-size:1.1em;"><b>${escapeHTML(mp.tipo)}</b></span>
-              <p>Saldo: <b>${mp.saldo} ${mp.unidade === 'kg' ? 'kg' : 'unidade'}</b></p>
-              <p>Preço: <b>R$ ${Number(mp.preco).toFixed(2)}/${mp.unidade === 'kg' ? 'kg' : 'unidade'}</b></p>
-            </div>
-            <div class="card-action" data-mpid="${mp.id}">
-              <button class="btn-small orange" data-action="edit" title="Editar"><span class="material-icons">edit</span></button>
-              <button class="btn-small blue" data-action="inline" title="Editar inline"><span class="material-icons">edit_attributes</span></button>
-              <button class="btn-small red" data-action="delete" title="Excluir"><span class="material-icons">delete</span></button>
-            </div>
-          </div>
-        </div>
-      `;
-    });
-
-    // attach actions
-    document.querySelectorAll('[data-mpid]').forEach(el=>{
-      const id = el.getAttribute('data-mpid');
-      el.querySelector('[data-action="edit"]').onclick = ()=> editarMP(id);
-      el.querySelector('[data-action="inline"]').onclick = (e)=> editRow('mpList', id, e.currentTarget);
-      el.querySelector('[data-action="delete"]').onclick = ()=> excluirMP(id);
-    });
-
-    // Table
-    const tbody = document.querySelector('#mpTable tbody'); tbody.innerHTML = "";
+    // Cards removed: only render table and select now
+    const tbody = document.querySelector('#mpTable tbody'); if(tbody) tbody.innerHTML = "";
     mpList.forEach((mp) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -861,32 +810,23 @@ document.addEventListener('DOMContentLoaded', function () {
       const btnDel = document.createElement('button'); btnDel.className='btn-small red'; btnDel.innerHTML='<span class="material-icons">delete</span>'; btnDel.onclick=()=> excluirMP(mp.id);
       tdActions.appendChild(btnEdit); tdActions.appendChild(btnInline); tdActions.appendChild(btnDel);
       tr.appendChild(tdActions);
-      tbody.appendChild(tr);
+      if(tbody) tbody.appendChild(tr);
     });
 
-    atualizarMPSaldoUI();
-    atualizarEstoqueUI();
+    // atualizar MPS via tabela/select
     atualizarSelectMP();
   }
 
   function atualizarMPSaldoUI(){
-    const container = document.getElementById('mpSaldo'); container.innerHTML = "";
-    mpList.forEach((mp) => {
-      const color = mp.unidade === 'kg' ? 'blue' : 'teal';
-      container.innerHTML += `
-        <div class="col s12 m6">
-          <div class="card ${color} lighten-4 z-depth-1 center-align" style="padding:9px;margin-bottom:10px;">
-            <span class="${color}-text text-darken-3" style="font-size:1.05em"><b>${escapeHTML(mp.tipo)}</b></span><br>
-            <span style="font-size:1.1em">${mp.saldo} ${mp.unidade === 'kg' ? 'kg' : 'unidade'}</span><br>
-            <span style="font-size:0.88em;">R$ ${Number(mp.preco).toFixed(2)}/${mp.unidade === 'kg' ? 'kg' : 'unidade'}</span>
-          </div>
-        </div>
-      `;
-    });
+    // Section "Saldo MP" was removed from HTML. Keep as no-op to avoid errors.
+    return;
   }
 
   function atualizarEstoqueUI(){
-    const tbody = document.querySelector('#estoqueTable tbody'); tbody.innerHTML = "";
+    // Estoque UI foi removida da página. Mantemos a função segura (no-op) para não quebrar outras chamadas.
+    const tbody = document.querySelector('#estoqueTable tbody');
+    if(!tbody) return;
+    tbody.innerHTML = "";
     mpList.forEach((mp) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -907,6 +847,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function atualizarSelectMP(){
     const select = document.getElementById('nomeMP');
+    if(!select) return; // select removed from UI
     select.innerHTML = '<option value="" disabled selected>Escolha a MP</option>';
     mpList.forEach(mp => {
       const opt = document.createElement('option');
@@ -919,12 +860,12 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function atualizarLabelQtd(){
     const select = document.getElementById('nomeMP');
+    if(!select) return;
     const tipoMPId = select.value;
     const mp = mpList.find(m=>m.id===tipoMPId);
     const labelEl = document.getElementById('qtdMPLab');
-    labelEl.innerText = mp ? (mp.unidade==='kg' ? 'Quantidade (kg)' : 'Quantidade (unidades)') : 'Quantidade';
+    if(labelEl) labelEl.innerText = mp ? (mp.unidade==='kg' ? 'Quantidade (kg)' : 'Quantidade (unidades)') : 'Quantidade';
   }
-  document.getElementById('nomeMP').onchange = atualizarLabelQtd;
 
   // Pedidos UI
   function atualizarPedidosUI(){
@@ -1024,7 +965,8 @@ document.addEventListener('DOMContentLoaded', function () {
       else if(String(mov.tipo).toLowerCase() === "saida") saldoFinanceiro -= valor;
     });
     const saldoFinal = saldoPedidos + saldoFinanceiro;
-    document.getElementById('saldoAtual').value = "R$ " + saldoFinal.toFixed(2);
+    const saldoEl = document.getElementById('saldoAtual');
+    if(saldoEl) saldoEl.value = "R$ " + saldoFinal.toFixed(2);
   }
 
   // Vencimentos checks
