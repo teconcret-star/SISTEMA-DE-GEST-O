@@ -1,3 +1,4 @@
+/* Base minimal (kept for backward compatibility) */
 body { font-family: Arial, sans-serif; max-width:650px; margin:2rem auto; padding:0 1rem; }
 h1 { font-size:1.4rem; }
 .input-row { display:flex; gap:0.5rem; margin-top:1rem; }
@@ -6,3 +7,134 @@ button { padding:0.5rem 1rem; font-size:1rem; }
 ul { margin-top:1rem; padding-left:1.2rem; }
 li { margin:0.3rem 0; }
 .info { margin-top:1.2rem; color:#555; font-size:0.9rem; }
+
+/* ------------------------------------------------------------------
+   THEME LAYERS
+   - sap-desktop: classic SAP-ish neutral/structured desktop layout
+   - ios-mobile: mobile (iOS-like) friendly layout with larger touch areas
+   ------------------------------------------------------------------ */
+
+/* base resets to ensure predictable layout */
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+th, td { padding: 8px 10px; border-bottom: 1px solid rgba(0,0,0,0.06); text-align: left; vertical-align: middle; }
+thead th { position: sticky; top: 0; z-index: 5; background:#fff; }
+
+/* Column filter inputs (inserted dynamically by script) */
+.col-filter-row input.col-filter-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  font-size: 0.9rem;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 4px;
+  background: #fff;
+  color: #222;
+}
+
+/* Helper to dim action column filter */
+.col-filter-row th:last-child input.col-filter-input { display:none; }
+
+/* ---- SAP Desktop theme ---- */
+body.sap-desktop {
+  background: #f2f2f2;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  color: #222;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+body.sap-desktop .container {
+  max-width: 1160px;
+  margin: 18px auto;
+  padding: 12px;
+}
+
+body.sap-desktop nav {
+  background: linear-gradient(180deg, #0f4c81, #08406a);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.06);
+  height:56px;
+}
+
+/* Table styling for SAP look */
+body.sap-desktop table {
+  background: #fff;
+  border: 1px solid #dcdcdc;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+body.sap-desktop thead th {
+  background: linear-gradient(180deg,#f5f7fa,#eef3f9);
+  color: #0f2d44;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border-bottom: 1px solid #d7d7d7;
+}
+
+body.sap-desktop tbody tr:hover { background: #fbfcfe; }
+
+body.sap-desktop .scroll-table { box-shadow: none; background: transparent; border: none; padding: 0; }
+
+/* compact action buttons */
+body.sap-desktop .btn-small { min-width:36px; height:34px; line-height:28px; padding:4px; }
+
+/* side menu stronger contrast on desktop (keeps IDs used by JS) */
+body.sap-desktop #sideMenu { background: #eeeae1; border-right: 1px solid #d0cfc6; }
+body.sap-desktop #sideTrigger { background: #e9e6d9; border-right: 1px solid #d0cfc6; }
+
+/* subtle cards used in MP area */
+body.sap-desktop .card { border: 1px solid #e6e6e6; border-radius:6px; }
+
+/* ---- iOS Mobile theme ---- */
+body.ios-mobile {
+  background: linear-gradient(180deg,#f6f7fa,#ffffff);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  padding-bottom: 80px; /* space for bottom action area if needed */
+}
+
+/* iOS - larger readable tables presented as cards */
+body.ios-mobile .container {
+  padding: 14px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+body.ios-mobile table {
+  display: block;
+  border: none;
+  width: 100%;
+}
+
+body.ios-mobile thead { display:block; margin-bottom:6px; }
+body.ios-mobile tbody { display:block; }
+body.ios-mobile tr { display:flex; flex-direction:column; background: #fff; margin-bottom:10px; padding:12px; border-radius:12px; box-shadow: 0 6px 18px rgba(21,24,27,0.06); border: 1px solid rgba(0,0,0,0.03); }
+body.ios-mobile td, body.ios-mobile th { display:block; padding:6px 0; border: none; min-width: unset; font-size: 15px; }
+
+/* present header on top of each card */
+body.ios-mobile tr td[data-field]:first-child { font-weight: 700; color: #0b3b5a; margin-bottom:4px; }
+
+/* iOS-friendly inputs */
+body.ios-mobile .col-filter-row input.col-filter-input {
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 15px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: #f7f8fa;
+}
+
+/* top floating action area example */
+body.ios-mobile .floating-action-btn { bottom: 18px; right: 18px; }
+
+/* ---- Accessibility & responsiveness ---- */
+@media (min-width: 901px) {
+  .col-filter-row input.col-filter-input { height: 34px; }
+}
+@media (max-width: 900px) {
+  /* on small screens enlarge buttons and inputs for touch */
+  input, button, .btn, .btn-small { font-size: 16px; padding: 10px; }
+  th, td { font-size: 15px; padding: 10px 12px; }
+}
+
+/* small visual niceties */
+.highlight-target { box-shadow: inset 0 0 0 3px rgba(0,102,153,0.08); transition: box-shadow .6s ease; }
