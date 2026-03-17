@@ -85,6 +85,15 @@
     /* highlight-target helper */
     .highlight-target { box-shadow: inset 0 0 0 3px rgba(0,102,153,0.08); transition: box-shadow .6s ease; }
 
+    /* Login overlay */
+    #authOverlay {
+      position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.48); z-index:9999;
+      display:flex; align-items:center; justify-content:center; pointer-events:auto;
+    }
+    #authBox {
+      width:360px; max-width:94vw; background:white; border-radius:8px; padding:18px; box-shadow:0 8px 30px rgba(0,0,0,.4);
+    }
+    #usersList { max-height:240px; overflow:auto; }
   </style>
 </head>
 <body class="grey lighten-5">
@@ -93,6 +102,7 @@
     <div class="nav-wrapper">
       <span class="material-icons left" style="margin-left:8px;margin-top:15px;">store</span>
       <a href="#" class="brand-logo center">SAP-Style • Pedidos & Estoque (Firestore)</a>
+      <a href="#" id="btnLogout" class="right" style="margin-right:12px; color:#fff; display:none;">Sair</a>
     </div>
   </nav>
 
@@ -111,6 +121,7 @@
       <li data-target="formServico"><span class="item-icon"><span class="material-icons">engineering</span></span><span>Prestação de Serviço</span></li>
       <li data-target="financeiroTable"><span class="item-icon"><span class="material-icons">attach_money</span></span><span>Financeiro</span></li>
       <li data-target="pedidosTable"><span class="item-icon"><span class="material-icons">assignment</span></span><span>Pedidos</span></li>
+      <li id="liUserManagement" style="display:none;"><span class="item-icon"><span class="material-icons">admin_panel_settings</span></span><span>Gerenciar Usuários</span></li>
     </ul>
   </nav>
 
@@ -375,6 +386,9 @@
           </button>
         </div>
       </div>
+
+      <!-- campo oculto para armazenar o vencimento calculado (yyyy-mm-dd) ou texto 'À vista' -->
+      <input type="hidden" id="pedidoVencDate" value="">
     </form>
 
     <!-- Pedidos table + filter (Produto, DataPedido) -->
@@ -522,6 +536,63 @@
     <input type="file" id="inputImportExcel" accept=".xlsx,.xls" style="display:none"/>
   </div>
 
+  <!-- Login overlay (visível até o usuário autenticar) -->
+  <div id="authOverlay" style="display:none;">
+    <div id="authBox" role="dialog" aria-labelledby="authTitle" aria-modal="true">
+      <h5 id="authTitle">Acesso</h5>
+      <p id="authMsg" style="margin-top:0;margin-bottom:6px;color:#555">Informe suas credenciais</p>
+      <div class="row" style="margin-bottom:8px;">
+        <div class="input-field col s12">
+          <input id="authUser" type="text" autocomplete="username" />
+          <label for="authUser">Usuário</label>
+        </div>
+        <div class="input-field col s12">
+          <input id="authPass" type="password" autocomplete="current-password" />
+          <label for="authPass">Senha</label>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button id="btnAuth" class="btn blue" style="flex:1">Entrar</button>
+        <button id="btnShowUsers" class="btn grey" style="flex:1;display:none">Usuários</button>
+      </div>
+      <div style="margin-top:12px;font-size:0.85rem;color:#666">
+        Observação: credenciais administrativas são criadas na primeira execução. Elas não são exibidas na interface por segurança.
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal/section de gerenciamento de usuários (apenas para admin) -->
+  <div id="userManagementModal" style="display:none; position:fixed; z-index:9998; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.42); align-items:center; justify-content:center;">
+    <div style="width:720px; max-width:94vw; background:#fff; border-radius:8px; padding:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h6 style="margin:0">Gerenciar Usuários</h6>
+        <button id="closeUserModal" class="btn-flat"><span class="material-icons">close</span></button>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:12px;">
+        <div style="flex:1;">
+          <div class="input-field">
+            <input id="newUserLogin" type="text" autocomplete="username"><label for="newUserLogin">Usuário</label>
+          </div>
+          <div class="input-field">
+            <input id="newUserPass" type="password" autocomplete="new-password"><label for="newUserPass">Senha</label>
+          </div>
+          <div class="input-field">
+            <select id="newUserRole">
+              <option value="user" selected>Usuário</option>
+              <option value="admin">Administrador</option>
+            </select>
+            <label for="newUserRole">Permissão</label>
+          </div>
+          <button id="btnAddUser" class="btn green" style="width:100%">Adicionar Usuário</button>
+        </div>
+        <div style="flex:1;">
+          <h6 style="margin-top:0">Usuários</h6>
+          <div id="usersList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Libs -->
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
@@ -529,6 +600,296 @@
   <!-- Firebase (compat v8) - necessário para o app.js que usa compat API -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <!-- Authentication + Vencimento fix (não exibe credenciais em tela; senhas armazenadas como hash) -->
+  <script>
+    (function(){
+      // ---------- Helpers for date handling ----------
+      function formatISODate(date){
+        const y = date.getFullYear();
+        const m = ('0'+(date.getMonth()+1)).slice(-2);
+        const d = ('0'+date.getDate()).slice(-2);
+        return y + '-' + m + '-' + d;
+      }
+      function parseDateInput(val){
+        // Parse yyyy-mm-dd reliably without timezone shifts
+        if(!val) return new Date();
+        const parts = val.split('-').map(Number);
+        if(parts.length !== 3) return new Date(val);
+        return new Date(parts[0], parts[1]-1, parts[2]);
+      }
+      function addDaysToDate(date, days){
+        const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        d.setDate(d.getDate() + Number(days));
+        return d;
+      }
+
+      // ---------- Password hashing (SHA-256) ----------
+      async function hashPassword(pass){
+        // returns hex string
+        const enc = new TextEncoder();
+        const data = enc.encode(pass);
+        const hashBuf = await crypto.subtle.digest('SHA-256', data);
+        const hashArr = Array.from(new Uint8Array(hashBuf));
+        return hashArr.map(b => b.toString(16).padStart(2,'0')).join('');
+      }
+
+      // ---------- User storage (localStorage) ----------
+      const STORAGE_KEY = 'app_users_v2';
+      const CURRENT_KEY = 'app_current_user_v2';
+
+      async function initUsers(){
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw){
+          // create default admin (user: admin, pass: L@b@pl2026) but DO NOT display it anywhere
+          const adminPassHash = await hashPassword('L@b@pl2026');
+          const defaultUsers = [
+            { user: 'admin', passHash: adminPassHash, role: 'admin' }
+          ];
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultUsers));
+        } else {
+          // ensure admin exists (in case older versions changed key)
+          try {
+            const arr = JSON.parse(raw);
+            if(!arr.find(u=>u.user === 'admin')){
+              const adminPassHash = await hashPassword('L@b@pl2026');
+              arr.push({ user: 'admin', passHash: adminPassHash, role: 'admin' });
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+            }
+          } catch(e){
+            // reset if corrupted
+            const adminPassHash = await hashPassword('L@b@pl2026');
+            localStorage.setItem(STORAGE_KEY, JSON.stringify([{ user: 'admin', passHash: adminPassHash, role: 'admin' }]));
+          }
+        }
+      }
+
+      function getUsers(){
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+        catch(e){ return []; }
+      }
+      function saveUsers(arr){ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+
+      async function addUser(user, pass, role){
+        const arr = getUsers();
+        if(arr.find(u=>u.user === user)) throw new Error('Usuário já existe');
+        const passHash = await hashPassword(pass);
+        arr.push({ user, passHash, role });
+        saveUsers(arr);
+      }
+
+      function removeUser(user){
+        let arr = getUsers();
+        arr = arr.filter(u=>u.user !== user);
+        saveUsers(arr);
+      }
+
+      async function checkCredentials(user, pass){
+        const arr = getUsers();
+        const hash = await hashPassword(pass);
+        return arr.find(u=>u.user === user && u.passHash === hash) || null;
+      }
+
+      // ---------- UI & flow ----------
+      const authOverlay = document.getElementById('authOverlay');
+      const btnAuth = document.getElementById('btnAuth');
+      const authUser = document.getElementById('authUser');
+      const authPass = document.getElementById('authPass');
+      const authMsg = document.getElementById('authMsg');
+      const btnLogout = document.getElementById('btnLogout');
+      const liUserManagement = document.getElementById('liUserManagement');
+      const btnShowUsers = document.getElementById('btnShowUsers');
+
+      const userModal = document.getElementById('userManagementModal');
+      const btnAddUser = document.getElementById('btnAddUser');
+      const usersList = document.getElementById('usersList');
+      const newUserLogin = document.getElementById('newUserLogin');
+      const newUserPass = document.getElementById('newUserPass');
+      const newUserRole = document.getElementById('newUserRole');
+      const closeUserModal = document.getElementById('closeUserModal');
+
+      async function bootAuth(){
+        await initUsers();
+        // if not logged, show overlay
+        if(!getCurrentUser()){
+          showAuthOverlay();
+        } else {
+          updateAuthUI();
+        }
+      }
+
+      function showAuthOverlay(){
+        authOverlay.style.display = 'flex';
+        authUser.focus();
+      }
+      function hideAuthOverlay(){
+        authOverlay.style.display = 'none';
+      }
+
+      function getCurrentUser(){
+        try { return JSON.parse(localStorage.getItem(CURRENT_KEY)); } catch(e){ return null; }
+      }
+      function setCurrentUser(uObj){
+        localStorage.setItem(CURRENT_KEY, JSON.stringify(uObj));
+        updateAuthUI();
+      }
+      function clearCurrentUser(){
+        localStorage.removeItem(CURRENT_KEY);
+        updateAuthUI();
+      }
+
+      function updateAuthUI(){
+        const cu = getCurrentUser();
+        if(cu){
+          btnLogout.style.display='inline-block';
+          if(cu.role === 'admin'){
+            liUserManagement.style.display = '';
+            btnShowUsers.style.display = '';
+          } else {
+            liUserManagement.style.display = 'none';
+            btnShowUsers.style.display = 'none';
+          }
+          hideAuthOverlay();
+        } else {
+          btnLogout.style.display='none';
+          liUserManagement.style.display = 'none';
+          btnShowUsers.style.display = 'none';
+        }
+      }
+
+      function renderUsersList(){
+        const arr = getUsers();
+        usersList.innerHTML = '';
+        arr.forEach(u=>{
+          const el = document.createElement('div');
+          el.style.display='flex';
+          el.style.justifyContent='space-between';
+          el.style.alignItems='center';
+          el.style.padding='6px 4px';
+          el.innerHTML = '<div><strong>'+u.user+'</strong> <small style="color:#666">('+u.role+')</small></div>';
+          if(u.user !== 'admin'){
+            const btnDel = document.createElement('button');
+            btnDel.className = 'btn-flat';
+            btnDel.innerHTML = '<span class="material-icons" style="color:#b71c1c">delete</span>';
+            btnDel.onclick = ()=>{ if(confirm('Remover usuário '+u.user+'?')){ removeUser(u.user); renderUsersList(); }};
+            el.appendChild(btnDel);
+          }
+          usersList.appendChild(el);
+        });
+      }
+
+      document.getElementById('liUserManagement').addEventListener('click', ()=> { renderUsersList(); userModal.style.display='flex'; });
+      closeUserModal.addEventListener('click', ()=> { userModal.style.display='none'; });
+      btnShowUsers.addEventListener('click', ()=> { renderUsersList(); userModal.style.display='flex'; });
+
+      btnAddUser.addEventListener('click', async ()=>{
+        const u = newUserLogin.value && newUserLogin.value.trim();
+        const p = newUserPass.value && newUserPass.value.trim();
+        const r = newUserRole.value || 'user';
+        if(!u || !p){ alert('Preencha usuário e senha'); return; }
+        try{
+          await addUser(u,p,r);
+          newUserLogin.value=''; newUserPass.value=''; newUserRole.value='user';
+          M.updateTextFields && M.updateTextFields();
+          renderUsersList();
+          alert('Usuário criado');
+        }catch(e){ alert(e.message); }
+      });
+
+      // login
+      btnAuth.addEventListener('click', async ()=>{
+        const u = authUser.value && authUser.value.trim();
+        const p = authPass.value && authPass.value.trim();
+        if(!u || !p){ authMsg.textContent = 'Digite usuário e senha'; return; }
+        const matched = await checkCredentials(u,p);
+        if(matched){
+          setCurrentUser({ user: matched.user, role: matched.role });
+          authUser.value=''; authPass.value='';
+          authMsg.textContent = 'Autenticado';
+        } else {
+          authMsg.textContent = 'Credenciais inválidas';
+        }
+      });
+
+      // logout
+      btnLogout.addEventListener('click', ()=>{
+        if(confirm('Deseja sair?')){ clearCurrentUser(); showAuthOverlay(); }
+      });
+
+      // Enter to submit
+      authPass.addEventListener('keyup', (ev)=>{ if(ev.key === 'Enter') btnAuth.click(); });
+      authUser.addEventListener('keyup', (ev)=>{ if(ev.key === 'Enter') btnAuth.click(); });
+
+      // ---------- Vencimento & custo: calcular sempre que inputs mudarem ----------
+      const pedidoData = document.getElementById('pedidoData');
+      const pedidoVenc = document.getElementById('pedidoVenc');
+      const pedidoKg = document.getElementById('pedidoKg');
+      const pedidoPrecoKg = document.getElementById('pedidoPrecoKg');
+      const pedidoCusto = document.getElementById('pedidoCusto');
+      const pedidoVencDateHidden = document.getElementById('pedidoVencDate');
+
+      function computeVencimentoAndCusto(){
+        const pedidoDataVal = pedidoData && pedidoData.value;
+        const pedidoVencOpt = pedidoVenc && pedidoVenc.value;
+        const kgNum = parseFloat(pedidoKg && pedidoKg.value) || 0;
+        const precoNum = parseFloat(pedidoPrecoKg && pedidoPrecoKg.value) || 0;
+
+        // custo
+        const custoFinal = (kgNum * precoNum) || 0;
+        if(pedidoCusto) pedidoCusto.value = custoFinal.toFixed(2);
+
+        // vencimento
+        const baseDate = parseDateInput(pedidoDataVal || formatISODate(new Date()));
+        let vencDateStr = '';
+        if(!pedidoVencOpt || pedidoVencOpt === ''){
+          vencDateStr = '';
+        } else if(pedidoVencOpt === 'avista'){
+          vencDateStr = 'À vista';
+        } else {
+          const dias = parseInt(pedidoVencOpt, 10);
+          if(!isNaN(dias)){
+            const vd = addDaysToDate(baseDate, dias);
+            vencDateStr = formatISODate(vd);
+          } else {
+            vencDateStr = '';
+          }
+        }
+        if(pedidoVencDateHidden) pedidoVencDateHidden.value = vencDateStr;
+      }
+
+      // attach listeners
+      if(pedidoData) pedidoData.addEventListener('change', computeVencimentoAndCusto);
+      if(pedidoVenc) pedidoVenc.addEventListener('change', computeVencimentoAndCusto);
+      if(pedidoKg) pedidoKg.addEventListener('input', computeVencimentoAndCusto);
+      if(pedidoPrecoKg) pedidoPrecoKg.addEventListener('input', computeVencimentoAndCusto);
+
+      // ensure a computation before any attempt to save (in case app.js reads the hidden field)
+      const btnPedido = document.getElementById('btnPedido');
+      if(btnPedido) btnPedido.addEventListener('click', computeVencimentoAndCusto);
+
+      // init selects (Materialize) and compute initial values
+      document.addEventListener('DOMContentLoaded', function() {
+        var elems = document.querySelectorAll('select');
+        M && M.FormSelect && M.FormSelect.init(elems);
+        computeVencimentoAndCusto();
+      });
+
+      // Start auth boot
+      bootAuth();
+
+      // expose helpers for app.js if needed
+      window.__appAuthHelpers = {
+        getUsers,
+        addUser,
+        removeUser,
+        getCurrentUser,
+        computeVencimentoAndCusto,
+        formatISODate,
+        parseDateInput,
+        addDaysToDate
+      };
+    })();
+  </script>
 
   <!-- App JS (integra com Firestore) -->
   <script src="app.js"></script>
