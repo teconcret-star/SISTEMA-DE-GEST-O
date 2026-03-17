@@ -341,6 +341,25 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('pedidoKg').oninput = atualizarCustoPedido;
   document.getElementById('pedidoPrecoKg').oninput = function(){ atualizarCustoPedido(); };
 
+  // Cancel edit pedido handler (corrigido: antes não havia ação)
+  const btnCancelarEditPedidoEl = document.getElementById('btnCancelarEditPedido');
+  if(btnCancelarEditPedidoEl){
+    btnCancelarEditPedidoEl.onclick = function(){
+      document.getElementById('pedidoEditId').value = '';
+      document.getElementById('formPedidoSection').reset();
+      // clear hidden venc date field if present
+      const hiddenVenc = document.getElementById('pedidoVencDate');
+      if(hiddenVenc) hiddenVenc.value = '';
+      document.getElementById('btnPedido').textContent = 'Registrar Pedido';
+      document.getElementById('btnCancelarEditPedido').style.display = 'none';
+      M.updateTextFields && M.updateTextFields();
+      M.FormSelect && M.FormSelect.init(document.getElementById('pedidoCliente'));
+      M.FormSelect && M.FormSelect.init(document.getElementById('pedidoProduto'));
+      M.FormSelect && M.FormSelect.init(document.getElementById('pedidoVenc'));
+      M.FormSelect && M.FormSelect.init(document.getElementById('pedidoStatus'));
+    };
+  }
+
   document.getElementById('btnPedido').onclick = async function(){
     const editId = document.getElementById('pedidoEditId').value || null;
     const clienteId = document.getElementById('pedidoCliente').value;
@@ -348,22 +367,48 @@ document.addEventListener('DOMContentLoaded', function () {
     const produto = document.getElementById('pedidoProduto').value;
     const precoKg = parseFloat(document.getElementById('pedidoPrecoKg').value);
     const custo = parseFloat(document.getElementById('pedidoCusto').value);
-    const venc = document.getElementById('pedidoVenc').value;
+    // note: vencimento will be resolved below using hidden field if present
     const dataPedidoInput = document.getElementById('pedidoData').value;
     const status = document.getElementById('pedidoStatus').value;
-    if(!clienteId || isNaN(kg) || kg<=0 || isNaN(precoKg) || precoKg<=0 || isNaN(custo) || custo<=0 || !venc || !produto) {
+    if(!clienteId || isNaN(kg) || kg<=0 || isNaN(precoKg) || precoKg<=0 || isNaN(custo) || custo<=0 || !produto) {
       M.toast({html:"Preencha todos os campos do pedido!"});
       return;
     }
     const hoje = new Date();
+
+    // Resolve vencimento: prefer hidden ISO field (set by index.html compute), fallback to select calculation
     let vencStr = "";
-    if(venc === 'avista'){
-      vencStr = "À vista";
+    const hiddenVencEl = document.getElementById('pedidoVencDate');
+    if(hiddenVencEl && hiddenVencEl.value){
+      const hv = String(hiddenVencEl.value).trim();
+      if(hv === '' ){
+        vencStr = '';
+      } else if(hv.toLowerCase() === 'à vista' || hv.toLowerCase() === 'avista' ){
+        vencStr = "À vista";
+      } else {
+        // expect ISO yyyy-mm-dd
+        const parts = hv.split('-');
+        if(parts.length === 3){
+          const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+          vencStr = formatDateToDDMMYYYY(d);
+        } else {
+          vencStr = '';
+        }
+      }
     } else {
-      const days = parseInt(venc);
-      const vencDate = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + days);
-      vencStr = `${String(vencDate.getDate()).padStart(2,'0')}/${String(vencDate.getMonth()+1).padStart(2,'0')}/${vencDate.getFullYear()}`;
+      // fallback: use value from select (#pedidoVenc)
+      const vencSelected = document.getElementById('pedidoVenc').value;
+      if(vencSelected === 'avista'){
+        vencStr = "À vista";
+      } else {
+        const days = parseInt(vencSelected);
+        if(!isNaN(days)){
+          const vencDate = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + days);
+          vencStr = `${String(vencDate.getDate()).padStart(2,'0')}/${String(vencDate.getMonth()+1).padStart(2,'0')}/${vencDate.getFullYear()}`;
+        } else vencStr = "";
+      }
     }
+
     let dataPedidoStr = "";
     if(dataPedidoInput){
       const d = parseDateInputAsLocal(dataPedidoInput);
@@ -387,6 +432,9 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       // reset form
       document.getElementById('formPedidoSection').reset();
+      // clear hidden venc date if exists
+      const hiddenV = document.getElementById('pedidoVencDate');
+      if(hiddenV) hiddenV.value = '';
       M.updateTextFields();
       M.FormSelect.init(document.getElementById('pedidoCliente'));
       M.FormSelect.init(document.getElementById('pedidoProduto'));
@@ -648,8 +696,12 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('pedidoData').value = iso;
       } else document.getElementById('pedidoData').value = '';
     } else document.getElementById('pedidoData').value = '';
+
+    // determine venc select and also populate hidden ISO field for consistent save
+    const pedidoVencDateHiddenEl = document.getElementById('pedidoVencDate');
     if(p.vencimento && String(p.vencimento).toLowerCase().includes('à vista')) {
       document.getElementById('pedidoVenc').value = 'avista';
+      if(pedidoVencDateHiddenEl) pedidoVencDateHiddenEl.value = 'À vista';
     } else {
       if(p.vencimento){
         const d = parseDDMMYYYYToDate(p.vencimento);
@@ -661,9 +713,21 @@ document.addEventListener('DOMContentLoaded', function () {
           else if(diff === 21) document.getElementById('pedidoVenc').value = '21';
           else if(diff === 28) document.getElementById('pedidoVenc').value = '28';
           else document.getElementById('pedidoVenc').selectedIndex = 0;
-        } else document.getElementById('pedidoVenc').selectedIndex = 0;
-      } else document.getElementById('pedidoVenc').selectedIndex = 0;
+
+          // also set hidden ISO
+          if(pedidoVencDateHiddenEl && d instanceof Date){
+            pedidoVencDateHiddenEl.value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          }
+        } else {
+          document.getElementById('pedidoVenc').selectedIndex = 0;
+          if(pedidoVencDateHiddenEl) pedidoVencDateHiddenEl.value = '';
+        }
+      } else {
+        document.getElementById('pedidoVenc').selectedIndex = 0;
+        if(pedidoVencDateHiddenEl) pedidoVencDateHiddenEl.value = '';
+      }
     }
+
     document.getElementById('pedidoStatus').value = p.status || 'Pendente';
     document.getElementById('btnPedido').textContent = 'Salvar Alteração';
     document.getElementById('btnCancelarEditPedido').style.display = '';
