@@ -115,8 +115,6 @@
     <ul>
       <li data-target="formCliente"><span class="item-icon"><span class="material-icons">person</span></span><span>Cadastro de Cliente</span></li>
       <li data-target="formCadastroMP"><span class="item-icon"><span class="material-icons">category</span></span><span>Cadastro de Produto (MP)</span></li>
-      <li data-target="mpCards"><span class="item-icon"><span class="material-icons">inventory_2</span></span><span>Minhas MPs</span></li>
-      <li data-target="estoqueTable"><span class="item-icon"><span class="material-icons">storefront</span></span><span>Estoque Atual</span></li>
       <li data-target="formPedidoSection"><span class="item-icon"><span class="material-icons">post_add</span></span><span>Novo Pedido</span></li>
       <li data-target="formServico"><span class="item-icon"><span class="material-icons">engineering</span></span><span>Prestação de Serviço</span></li>
       <li data-target="financeiroTable"><span class="item-icon"><span class="material-icons">attach_money</span></span><span>Financeiro</span></li>
@@ -251,11 +249,7 @@
       </div>
     </form>
 
-    <!-- MP Cards -->
-    <div class="section-h">Minhas MPs</div>
-    <div id="mpCards" class="row" style="margin-bottom: 18px;"></div>
-
-    <!-- MP TABLE + FILTER -->
+    <!-- MPs Table + Filter (cards removed) -->
     <div class="section-h">MPs Tabela</div>
     <input id="filterMP" class="table-filter" placeholder="Filtrar MPs..." />
     <div class="scroll-table">
@@ -266,52 +260,6 @@
             <th>Saldo</th>
             <th>Preço</th>
             <th>Unidade</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <!-- Movimentação MP form -->
-    <div class="section-h">Movimentar MP</div>
-    <form class="card-panel z-depth-1">
-      <div class="row">
-        <div class="input-field col s12 m5">
-          <select id="nomeMP">
-            <option value="" disabled selected>Escolha a MP</option>
-          </select>
-          <label for="nomeMP">MP</label>
-        </div>
-        <div class="input-field col s6 m3">
-          <input id="qtdMP" type="number" min="1">
-          <label id="qtdMPLab" for="qtdMP">Quantidade</label>
-        </div>
-        <div class="input-field col s6 m4">
-          <select id="opMP">
-            <option value="entrada">Entrada</option>
-            <option value="saida">Saída</option>
-          </select>
-          <label for="opMP">Operação</label>
-        </div>
-      </div>
-      <button class="btn blue" type="button" id="btnMP" style="width:100%">Movimentar</button>
-    </form>
-
-    <div class="section-h">Saldo MP</div>
-    <div id="mpSaldo" class="row" style="margin-bottom: 12px;"></div>
-
-    <!-- Estoque TABLE -->
-    <div class="section-h">Estoque Atual</div>
-    <input id="filterEstoque" class="table-filter" placeholder="Filtrar estoque..." />
-    <div class="scroll-table">
-      <table class="highlight responsive-table" id="estoqueTable">
-        <thead>
-          <tr>
-            <th>MP</th>
-            <th>Saldo</th>
-            <th>Preço</th>
-            <th>Tipo</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -963,7 +911,7 @@
       }
 
       // Apply to all table ids used in the app
-      const TABLE_IDS = ['clientesTable','mpTable','estoqueTable','pedidosTable','financeiroTable','servicosTable'];
+      const TABLE_IDS = ['clientesTable','mpTable','pedidosTable','financeiroTable','servicosTable'];
 
       function initColumnFilters(){
         TABLE_IDS.forEach(id => {
@@ -1004,7 +952,6 @@
         const globalFilterBindings = [
           { inputId: 'filterClientes', tableId: 'clientesTable' },
           { inputId: 'filterMP', tableId: 'mpTable' },
-          { inputId: 'filterEstoque', tableId: 'estoqueTable' },
           { inputId: 'filterPedidos', tableId: 'pedidosTable' },
           { inputId: 'filterFinanceiro', tableId: 'financeiroTable' },
           { inputId: 'filterServicos', tableId: 'servicosTable' }
