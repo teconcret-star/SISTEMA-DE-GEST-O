@@ -893,5 +893,134 @@
 
   <!-- App JS (integra com Firestore) -->
   <script src="app.js"></script>
+
+  <!-- UI Enhancements: column filters + theme switcher (não altera lógica do app.js) -->
+  <script>
+    (function(){
+      // Utilities
+      function addColumnFiltersToTable(tableId){
+        const table = document.getElementById(tableId);
+        if(!table) return;
+        const thead = table.querySelector('thead');
+        if(!thead) return;
+        // Avoid duplicating filter row
+        if(thead.querySelector('.col-filter-row')) return;
+
+        const headerRow = thead.querySelector('tr');
+        if(!headerRow) return;
+        const filterRow = document.createElement('tr');
+        filterRow.className = 'col-filter-row';
+        Array.from(headerRow.children).forEach((th, idx) => {
+          const thFilter = document.createElement('th');
+          // If this is the actions column (last) skip showing input
+          const thText = (th.textContent || '').trim().toLowerCase();
+          if(thText === 'ações' || idx === headerRow.children.length - 1){
+            thFilter.innerHTML = '';
+            thFilter.style.minWidth = th.style.minWidth || '60px';
+          } else {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'col-filter-input';
+            input.dataset.colIndex = idx;
+            input.placeholder = 'Filtrar';
+            input.addEventListener('input', function(){ applyColumnFilters(table); });
+            thFilter.appendChild(input);
+          }
+          filterRow.appendChild(thFilter);
+        });
+        thead.appendChild(filterRow);
+      }
+
+      function applyColumnFilters(table){
+        const inputs = Array.from(table.querySelectorAll('.col-filter-input'));
+        const rows = Array.from(table.querySelectorAll('tbody tr'));
+        rows.forEach(row => {
+          let visible = true;
+          inputs.forEach(inp => {
+            const idx = Number(inp.dataset.colIndex);
+            const val = (inp.value || '').trim().toLowerCase();
+            if(!val) return;
+            // some rows in mobile layout are flex and cells might not align by index; guard
+            const cell = row.children[idx];
+            const cellText = cell ? (cell.innerText || '').trim().toLowerCase() : '';
+            if(cellText.indexOf(val) === -1) visible = false;
+          });
+          row.style.display = visible ? '' : 'none';
+        });
+      }
+
+      // Observe tbody changes to re-run filters when app.js replaces rows
+      function observeTableBody(tableId){
+        const table = document.getElementById(tableId);
+        if(!table) return;
+        const tbody = table.querySelector('tbody');
+        if(!tbody) return;
+        const mo = new MutationObserver(() => {
+          // reapply column-filter when rows change
+          applyColumnFilters(table);
+        });
+        mo.observe(tbody, { childList: true, subtree: false });
+      }
+
+      // Apply to all table ids used in the app
+      const TABLE_IDS = ['clientesTable','mpTable','estoqueTable','pedidosTable','financeiroTable','servicosTable'];
+
+      function initColumnFilters(){
+        TABLE_IDS.forEach(id => {
+          addColumnFiltersToTable(id);
+          observeTableBody(id);
+        });
+      }
+
+      // Theme toggling: sap-desktop for width > 900, ios-mobile for <= 900
+      function applyAdaptiveTheme(){
+        const isDesktop = window.innerWidth > 900;
+        document.body.classList.toggle('sap-desktop', isDesktop);
+        document.body.classList.toggle('ios-mobile', !isDesktop);
+      }
+
+      // Ensure initialization runs whether DOMContentLoaded already fired or not
+      function ready(fn){
+        if(document.readyState === 'complete' || document.readyState === 'interactive'){
+          setTimeout(fn, 50);
+        } else {
+          document.addEventListener('DOMContentLoaded', fn);
+        }
+      }
+
+      ready(function(){
+        // Initialize filters
+        initColumnFilters();
+        // Apply theme now and on resize
+        applyAdaptiveTheme();
+        window.addEventListener('resize', function(){ applyAdaptiveTheme(); });
+
+        // Also make sure Materialize selects are re-initialized for any dynamically added selects
+        if(window.M && M.FormSelect){
+          M.FormSelect.init(document.querySelectorAll('select'));
+        }
+
+        // Hook global filter inputs already present in page to also trigger column filters
+        const globalFilterBindings = [
+          { inputId: 'filterClientes', tableId: 'clientesTable' },
+          { inputId: 'filterMP', tableId: 'mpTable' },
+          { inputId: 'filterEstoque', tableId: 'estoqueTable' },
+          { inputId: 'filterPedidos', tableId: 'pedidosTable' },
+          { inputId: 'filterFinanceiro', tableId: 'financeiroTable' },
+          { inputId: 'filterServicos', tableId: 'servicosTable' }
+        ];
+        globalFilterBindings.forEach(({inputId, tableId}) => {
+          const inp = document.getElementById(inputId);
+          const table = document.getElementById(tableId);
+          if(inp && table){
+            inp.addEventListener('input', function(){
+              // combine global filter with column filters
+              applyColumnFilters(table);
+            });
+          }
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
