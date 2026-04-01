@@ -120,14 +120,8 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch(err){ showStatus('Erro ao salvar MP.', true); }
   };
 
-  // BOTÃO FINANCEIRO (CORREÇÃO)
   const btnFin = document.getElementById('btnFinanceiro');
-  if(btnFin){
-    btnFin.addEventListener('click', function(e){
-      e.preventDefault();
-      registrarFinanceiro();
-    });
-  }
+  if(btnFin){ btnFin.addEventListener('click', function(e){ e.preventDefault(); registrarFinanceiro(); }); }
 
   async function registrarFinanceiro(desc, valor, tipo, chamadoPorPedido = false, vencStr = ""){
     let dataLanc = ""; let obs = "";
@@ -361,6 +355,27 @@ document.addEventListener('DOMContentLoaded', function () {
     calcularSaldo(); checkVencimentosPedidos7dias(); reapplyAllFilters();
   }
 
+  // ====== LOGICA DE RESUMO DO MÊS NO CALENDÁRIO ======
+  window.calcularResumoMes = function(month, year) {
+    let totalEntrada = 0;
+    let totalSaida = 0;
+    financeiro.forEach(m => {
+      let dataEvento = null;
+      if(m.vencimento && typeof m.vencimento === 'string' && m.vencimento.includes('/')){ const d = parseDDMMYYYYToDate(m.vencimento); if(d) dataEvento = d; }
+      if(!dataEvento && m.dataLanc && typeof m.dataLanc === 'string' && m.dataLanc.includes('/')){ const d2 = parseDDMMYYYYToDate(m.dataLanc); if(d2) dataEvento = d2; }
+      
+      if (dataEvento && dataEvento.getMonth() === month && dataEvento.getFullYear() === year) {
+        const valor = Number(m.valor) || 0;
+        if(String(m.tipo).toLowerCase() === 'entrada') totalEntrada += valor;
+        else totalSaida += valor;
+      }
+    });
+    const elEntrada = document.getElementById('somaEntradasMes');
+    const elSaida = document.getElementById('somaSaidasMes');
+    if(elEntrada) elEntrada.innerText = `R$ ${totalEntrada.toFixed(2).replace('.',',')}`;
+    if(elSaida) elSaida.innerText = `R$ ${totalSaida.toFixed(2).replace('.',',')}`;
+  };
+
   let financeiroCalendar = null;
   function renderFinanceiroCalendar(){
     const el = document.getElementById('financeiroCalendar');
@@ -379,11 +394,18 @@ document.addEventListener('DOMContentLoaded', function () {
         initialView: 'dayGridMonth', locale: 'pt-br', height: 'auto',
         headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth,listMonth' },
         events,
-        eventClick: function(info){ const ex = info.event.extendedProps || {}; alert(`Descrição: ${info.event.title}\nData Lanç.: ${ex.dataLanc || '-'}\nVencimento: ${ex.vencimento || '-'}\nObservação: ${ex.obs || '-'}`); }
+        eventClick: function(info){ const ex = info.event.extendedProps || {}; alert(`Descrição: ${info.event.title}\nData Lanç.: ${ex.dataLanc || '-'}\nVencimento: ${ex.vencimento || '-'}\nObservação: ${ex.obs || '-'}`); },
+        datesSet: function(info) {
+          // O getMonth() no currentStart retorna exatamente o mês que está sendo visto
+          const d = info.view.currentStart;
+          window.calcularResumoMes(d.getMonth(), d.getFullYear());
+        }
       });
       financeiroCalendar.render();
     } else {
       financeiroCalendar.removeAllEvents(); events.forEach(ev => financeiroCalendar.addEvent(ev));
+      const d = financeiroCalendar.getDate();
+      window.calcularResumoMes(d.getMonth(), d.getFullYear());
     }
   }
 
@@ -402,8 +424,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     if(alerta) M.toast({html:"Atenção: Existem despesas próximas ao vencimento!", displayLength:8000, classes:'red'});
     
-    // Atraso de 100ms para garantir que o painel tá no DOM antes do Calendário injetar tabelas
-    setTimeout(() => { renderFinanceiroCalendar(); }, 100);
+    setTimeout(() => { renderFinanceiroCalendar(); }, 150);
     reapplyAllFilters();
   }
 
