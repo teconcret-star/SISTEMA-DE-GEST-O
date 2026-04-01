@@ -173,6 +173,20 @@
     <div class="section-h">Calendário Financeiro</div>
     <div class="card-panel z-depth-1" style="padding:10px;">
       <div id="financeiroCalendar"></div>
+      
+      <!-- Cards de Resumo do Mês Adicionados Aqui -->
+      <div style="display:flex; gap:10px; margin-top:15px;">
+        <div class="sap-summary-card sap-entrada">
+          <div class="title">Entradas do Mês</div>
+          <div class="value" id="somaEntradasMes">R$ 0,00</div>
+        </div>
+        <div class="sap-summary-card sap-saida">
+          <div class="title">Saídas do Mês</div>
+          <div class="value" id="somaSaidasMes">R$ 0,00</div>
+        </div>
+      </div>
+      <!-- Fim Cards -->
+      
     </div>
 
     <div class="section-h">Financeiro Histórico</div>
@@ -184,7 +198,7 @@
       </table>
     </div>
 
-    <div class="section-h">Saldo Atual</div>
+    <div class="section-h">Saldo Atual Total</div>
     <div style="margin-bottom:32px;">
       <input id="saldoAtual" readonly class="input-field center" style="width:180px;font-weight:bold;text-align:center;color:green;">
     </div>
