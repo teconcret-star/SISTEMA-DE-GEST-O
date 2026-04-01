@@ -2,111 +2,26 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Pedidos, Clientes, Estoque</title>
+  <title>Pedidos, Clientes, Estoque - Estilo SAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2196F3">
-  <!-- Ícones Materialize + Google Font Roboto para app-like -->
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <style>
-    /* ---- Estilo inspirado em SAP Clássico (tons neutros) + mobile friendly ---- */
-    :root{
-      --sap-bg:#f3f3f3;
-      --sap-header:#0f4c81; /* azul escuro */
-      --sap-side:#e6e6d8; /* bege claro */
-      --sap-panel:#fbfbf7;
-      --sap-accent:#006699;
-      --sap-text:#222;
-    }
-    html,body { height:100%; }
-    body { font-family: 'Roboto', Arial, sans-serif; background: var(--sap-bg); color:var(--sap-text); -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color: transparent; }
-    nav { background:var(--sap-header); box-shadow:none; height:56px; line-height:56px; }
-    .brand-logo { font-weight:600; font-size:1.05rem; color:#fff; }
-    .nav-wrapper .material-icons { color:#fff; }
-    .container { max-width:1200px; width:98vw; margin:auto; padding-top:12px;}
-    .card-panel { background:var(--sap-panel); box-shadow: 0 1px 0 rgba(0,0,0,0.12);}
-    .section-h { margin:18px 3px 8px 3px; font-size:1.05em; font-weight:600; color:#333; }
-    .scroll-table { overflow-x:auto; margin-bottom:12px; background:transparent; border:1px solid #ddd; border-radius:6px; padding:6px;}
-    table th, table td { min-width:120px; padding:8px 10px; }
-    th { background:#efefef; color:#111; font-weight:600; }
-    .floating-action-btn { position:fixed; bottom:16px; right:16px; z-index:99; display:flex; gap:12px;}
-    /* SAP-like left side menu (dinâmico) */
-    #sideTrigger{
-      position:fixed; left:0; top:56px; width:36px; height:56px; background:var(--sap-side); border-right:1px solid #d0d0c0;
-      display:flex; align-items:center; justify-content:center; z-index:160;
-      cursor:pointer; border-top-right-radius:6px; border-bottom-right-radius:6px;
-      transition: background .15s;
-      touch-action: manipulation;
-    }
-    #sideTrigger .material-icons { font-size:22px; color:#333; }
-    #sideTrigger:active { background:#dedecb; }
-    #sideMenu{
-      position:fixed; left:0; top:56px; height:calc(100% - 56px); width:260px;
-      transform:translateX(-220px); transition: transform .18s ease-in-out;
-      background:var(--sap-side); border-right:1px solid #d0d0c0; z-index:159;
-      padding-top:8px; border-top-right-radius:6px; border-bottom-right-radius:6px;
-      -webkit-overflow-scrolling: touch;
-    }
-    /* overlay for mobile */
-    #menuOverlay{
-      position:fixed; left:0; top:56px; width:100%; height:calc(100% - 56px); background:rgba(0,0,0,0.32);
-      z-index:158; opacity:0; pointer-events:none; transition:opacity .18s;
-    }
-    #menuOverlay.visible { opacity:1; pointer-events:auto; }
-
-    #sideMenu.open{ transform:translateX(0); }
-    #sideMenu ul { margin:0; padding:6px 6px; max-height:100%; overflow:auto; }
-    #sideMenu li { list-style:none; margin:6px 0; cursor:pointer; padding:12px 10px; border-radius:6px; display:flex; gap:10px; align-items:center; color:#222; font-size:0.98rem; }
-    #sideMenu li:hover { background:#e0e0d0; }
-    #sideMenu .item-icon { width:34px; text-align:center; color:#0f4c81; }
-
-    /* mobile-friendly touch targets */
-    .btn-small { min-width:40px; min-height:36px; padding:6px; }
-    .small-action { margin-right:6px; }
-
-    .editing-row { background:#fffde7 !important; }
-    td[contenteditable="true"] { background: #fffbe6; outline: none; }
-
-    /* Responsive tweaks */
-    @media (max-width:900px) {
-      .container { width:100vw; max-width:100vw; padding:8px; }
-      th, td { font-size:0.95em; padding:10px 12px; }
-      /* On mobile the side menu becomes an overlay full-height, accessible by tap & swipe */
-      #sideMenu { width:84vw; transform:translateX(-84vw); left:0; }
-      #sideMenu.open { transform:translateX(0); }
-      #sideTrigger { left:8px; top:8px; width:44px; height:44px; border-radius:8px; }
-      #sideTrigger .material-icons { font-size:24px; }
-      #menuOverlay { top:0; height:100vh; }
-    }
-
-    /* highlight-target helper */
-    .highlight-target { box-shadow: inset 0 0 0 3px rgba(0,102,153,0.08); transition: box-shadow .6s ease; }
-
-    /* Login overlay */
-    #authOverlay {
-      position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.48); z-index:9999;
-      display:flex; align-items:center; justify-content:center; pointer-events:auto;
-    }
-    #authBox {
-      width:360px; max-width:94vw; background:white; border-radius:8px; padding:18px; box-shadow:0 8px 30px rgba(0,0,0,.4);
-    }
-    #usersList { max-height:240px; overflow:auto; }
-  </style>
 </head>
 <body class="grey lighten-5">
 
   <nav class="blue">
     <div class="nav-wrapper">
-      <span class="material-icons left" style="margin-left:8px;margin-top:15px;">store</span>
-      <a href="#" class="brand-logo center">SAP-Style • Pedidos & Estoque (Firestore)</a>
+      <span class="material-icons left" style="margin-left:8px;margin-top:9px;">store</span>
+      <a href="#" class="brand-logo center">SAP-Style • Pedidos & Estoque</a>
       <a href="#" id="btnLogout" class="right" style="margin-right:12px; color:#fff; display:none;">Sair</a>
     </div>
   </nav>
 
-  <!-- Side menu trigger and menu -->
   <div id="sideTrigger" title="Abrir menu" aria-hidden="false" role="button" tabindex="0">
     <span class="material-icons">menu</span>
   </div>
@@ -119,13 +34,10 @@
       <li data-target="formServico"><span class="item-icon"><span class="material-icons">engineering</span></span><span>Prestação de Serviço</span></li>
       <li data-target="financeiroTable"><span class="item-icon"><span class="material-icons">attach_money</span></span><span>Financeiro</span></li>
       <li data-target="pedidosTable"><span class="item-icon"><span class="material-icons">assignment</span></span><span>Pedidos</span></li>
-      <li id="liUserManagement" style="display:none;"><span class="item-icon"><span class="material-icons">admin_panel_settings</span></span><span>Gerenciar Usuários</span></li>
     </ul>
   </nav>
 
   <div class="container">
-
-    <!-- CLIENTE FORM -->
     <div class="section-h">Cadastro de Cliente</div>
     <form id="formCliente" class="card-panel z-depth-1">
       <input type="hidden" id="clienteEditId" value="">
@@ -142,13 +54,13 @@
           <label for="clienteDocTipo">Tipo de Doc</label>
         </div>
         <div class="input-field col s6 m3">
-          <input id="clienteDoc" type="text" required maxlength="18" placeholder="">
+          <input id="clienteDoc" type="text" required maxlength="18">
           <label for="clienteDoc">CPF/CNPJ</label>
         </div>
       </div>
       <div class="row">
         <div class="input-field col s4">
-          <input id="clienteTel" type="text" maxlength="15" placeholder="">
+          <input id="clienteTel" type="text" maxlength="15">
           <label for="clienteTel">Telefone</label>
         </div>
         <div class="input-field col s8">
@@ -176,280 +88,153 @@
           <label for="clienteEnd">Endereço</label>
         </div>
         <div class="input-field col s4">
-          <button class="btn orange" type="button" id="buscarCEP" style="margin-top:16px;width:100%">
-            <span class="material-icons left">search</span>
-            Buscar CEP
+          <button class="btn" type="button" id="buscarCEP" style="margin-top:16px;width:100%">
+            <span class="material-icons left">search</span>Buscar CEP
           </button>
         </div>
       </div>
-      <button class="btn blue" type="submit" style="width:100%;margin-top:10px;">
-        <span class="material-icons left">person_add</span>
-        Salvar Cliente
+      <button class="btn" type="submit" style="width:100%;margin-top:10px;">
+        <span class="material-icons left">person_add</span>Salvar Cliente
       </button>
     </form>
 
-    <!-- CLIENTES TABLE + FILTER -->
     <div class="section-h">Clientes Cadastrados</div>
-    <input id="filterClientes" class="table-filter" placeholder="Filtrar clientes (pesquise por qualquer coluna)..." />
+    <input id="filterClientes" class="table-filter" placeholder="Pesquisa global (qualquer coluna)..." />
     <div class="scroll-table">
       <table class="highlight responsive-table" id="clientesTable">
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Tipo</th>
-            <th>CPF/CNPJ</th>
-            <th>Tel</th>
-            <th>Email</th>
-            <th>CEP</th>
-            <th>Endereço</th>
-            <th>Nº</th>
-            <th>Compl.</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Nome</th><th>Tipo</th><th>CPF/CNPJ</th><th>Tel</th><th>Email</th><th>CEP</th><th>Endereço</th><th>Nº</th><th>Compl.</th><th>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
 
-    <!-- MP Form -->
     <div class="section-h">Cadastro/Edição de MP</div>
     <form id="formCadastroMP" class="card-panel z-depth-1">
       <input type="hidden" id="mpEditId" value="">
       <div class="row">
-        <div class="input-field col s12 m4">
-          <input id="mpTipo" type="text" required>
-          <label for="mpTipo">Tipo</label>
-        </div>
-        <div class="input-field col s6 m4">
-          <input id="mpQtd" type="number" min="0" required>
-          <label for="mpQtd">Qtd</label>
-        </div>
-        <div class="input-field col s6 m4">
-          <input id="mpPreco" type="number" min="0.01" step="0.01" required>
-          <label for="mpPreco">Preço</label>
-        </div>
+        <div class="input-field col s12 m4"><input id="mpTipo" type="text" required><label for="mpTipo">Tipo</label></div>
+        <div class="input-field col s6 m4"><input id="mpQtd" type="number" min="0" required><label for="mpQtd">Qtd</label></div>
+        <div class="input-field col s6 m4"><input id="mpPreco" type="number" min="0.01" step="0.01" required><label for="mpPreco">Preço</label></div>
       </div>
       <div class="row">
         <div class="input-field col s8">
-          <select id="mpUnidade">
-            <option value="kg" selected>Custo/kg</option>
-            <option value="unidade">Custo/unidade</option>
-          </select>
+          <select id="mpUnidade"><option value="kg" selected>Custo/kg</option><option value="unidade">Custo/unidade</option></select>
           <label for="mpUnidade">Tipo</label>
         </div>
         <div class="input-field col s4">
-          <button class="btn green" type="submit" id="btnSalvarMP" style="width:100%">
-            <span class="material-icons left">save</span>
-            Salvar MP
-          </button>
-          <button type="button" id="btnCancelarEditMP" class="btn orange" style="display:none;margin-left:8px;">
-            <span class="material-icons left">close</span> Cancelar
-          </button>
+          <button class="btn" type="submit" id="btnSalvarMP" style="width:100%"><span class="material-icons left">save</span>Salvar MP</button>
+          <button type="button" id="btnCancelarEditMP" class="btn" style="display:none;margin-left:8px;"><span class="material-icons left">close</span> Cancelar</button>
         </div>
       </div>
     </form>
 
-    <!-- MPs Table + Filter (cards removed) -->
     <div class="section-h">MPs Tabela</div>
-    <input id="filterMP" class="table-filter" placeholder="Filtrar MPs..." />
+    <input id="filterMP" class="table-filter" placeholder="Pesquisa global..." />
     <div class="scroll-table">
       <table class="highlight responsive-table" id="mpTable">
-        <thead>
-          <tr>
-            <th>Tipo</th>
-            <th>Saldo</th>
-            <th>Preço</th>
-            <th>Unidade</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Tipo</th><th>Saldo</th><th>Preço</th><th>Unidade</th><th>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
 
-    <!-- Pedido form (produto, data do pedido, vencimento 'à vista') -->
     <div class="section-h">Novo Pedido</div>
     <form id="formPedidoSection" class="card-panel z-depth-1">
       <input type="hidden" id="pedidoEditId" value="">
       <div class="row">
-        <div class="input-field col s12 m4">
-          <select id="pedidoCliente">
-            <option value="" disabled selected>Selecione</option>
-          </select>
-          <label for="pedidoCliente">Cliente</label>
-        </div>
-        <div class="input-field col s12 m4">
-          <input id="pedidoKg" type="number" min="0.01" step="0.01">
-          <label for="pedidoKg">Qtd (kg)</label>
-        </div>
-        <div class="input-field col s12 m4">
-          <select id="pedidoStatus">
-            <option value="Pendente" selected>Pendente</option>
-            <option value="Pago">Pago</option>
-            <option value="Cancelado">Cancelado</option>
-          </select>
-          <label for="pedidoStatus">Status</label>
-        </div>
+        <div class="input-field col s12 m4"><select id="pedidoCliente"><option value="" disabled selected>Selecione</option></select><label for="pedidoCliente">Cliente</label></div>
+        <div class="input-field col s12 m4"><input id="pedidoKg" type="number" min="0.01" step="0.01"><label for="pedidoKg">Qtd (kg)</label></div>
+        <div class="input-field col s12 m4"><select id="pedidoStatus"><option value="Pendente" selected>Pendente</option><option value="Pago">Pago</option><option value="Cancelado">Cancelado</option></select><label for="pedidoStatus">Status</label></div>
       </div>
       <div class="row">
-        <div class="input-field col s12 m4">
-          <select id="pedidoProduto">
-            <option value="" disabled selected>Selecione o produto</option>
-            <option value="CURE FILM H">CURE FILM H</option>
-            <option value="CURE FILM HC">CURE FILM HC</option>
-            <option value="HARDSURF H">HARDSURF H</option>
-            <option value="HARDSURF HC">HARDSURF HC</option>
-          </select>
-          <label for="pedidoProduto">Produto</label>
-        </div>
-        <div class="input-field col s12 m4">
-          <input id="pedidoPrecoKg" type="number" min="0.01" step="0.01">
-          <label for="pedidoPrecoKg">Preço/kg (R$)</label>
-        </div>
-        <div class="input-field col s12 m4">
-          <input id="pedidoCusto" type="number" readonly>
-          <label for="pedidoCusto">Custo Final (R$)</label>
-        </div>
+        <div class="input-field col s12 m4"><select id="pedidoProduto"><option value="" disabled selected>Selecione o produto</option><option value="CURE FILM H">CURE FILM H</option><option value="CURE FILM HC">CURE FILM HC</option><option value="HARDSURF H">HARDSURF H</option><option value="HARDSURF HC">HARDSURF HC</option></select><label for="pedidoProduto">Produto</label></div>
+        <div class="input-field col s12 m4"><input id="pedidoPrecoKg" type="number" min="0.01" step="0.01"><label for="pedidoPrecoKg">Preço/kg (R$)</label></div>
+        <div class="input-field col s12 m4"><input id="pedidoCusto" type="number" readonly><label for="pedidoCusto">Custo Final (R$)</label></div>
       </div>
       <div class="row">
-        <div class="input-field col s12 m4">
-          <input id="pedidoData" type="date">
-          <label for="pedidoData" class="active">Data do Pedido</label>
-        </div>
-        <div class="input-field col s12 m4">
-          <select id="pedidoVenc">
-            <option value="" disabled selected>Vencimento</option>
-            <option value="7">7d</option>
-            <option value="14">14d</option>
-            <option value="21">21d</option>
-            <option value="28">28d</option>
-            <option value="avista">À vista</option>
-          </select>
-          <label for="pedidoVenc">Venc.</label>
-        </div>
+        <div class="input-field col s12 m4"><input id="pedidoData" type="date"><label for="pedidoData" class="active">Data do Pedido</label></div>
+        <div class="input-field col s12 m4"><select id="pedidoVenc"><option value="" disabled selected>Vencimento</option><option value="7">7d</option><option value="14">14d</option><option value="21">21d</option><option value="28">28d</option><option value="avista">À vista</option></select><label for="pedidoVenc">Venc.</label></div>
         <div class="input-field col s12 m4" style="display:flex;gap:8px;">
-          <button class="btn blue" type="button" id="btnPedido" style="flex:1">Registrar Pedido</button>
-          <button type="button" id="btnCancelarEditPedido" class="btn grey" style="display:none;flex:1">
-            <span class="material-icons left">close</span> Cancelar
-          </button>
+          <button class="btn" type="button" id="btnPedido" style="flex:1">Registrar Pedido</button>
+          <button type="button" id="btnCancelarEditPedido" class="btn" style="display:none;flex:1"><span class="material-icons left">close</span> Cancelar</button>
         </div>
       </div>
-
-      <!-- campo oculto para armazenar o vencimento calculado (yyyy-mm-dd) ou texto 'À vista' -->
       <input type="hidden" id="pedidoVencDate" value="">
     </form>
 
-    <!-- Pedidos table + filter (Produto, DataPedido) -->
     <div class="section-h">Pedidos</div>
-    <input id="filterPedidos" class="table-filter" placeholder="Filtrar pedidos..." />
+    <input id="filterPedidos" class="table-filter" placeholder="Pesquisa global..." />
     <div class="scroll-table">
       <table class="highlight responsive-table" id="pedidosTable">
-        <thead>
-          <tr>
-            <th>Cliente</th>
-            <th>CPF/CNPJ</th>
-            <th>Produto</th>
-            <th>Kgs</th>
-            <th>Preço/kg</th>
-            <th>Custo</th>
-            <th>Data Pedido</th>
-            <th>Vencimento</th>
-            <th>Status</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>Produto</th><th>Kgs</th><th>Preço/kg</th><th>Custo</th><th>Data Pedido</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
 
-    <!-- Prestação de Serviço -->
     <div class="section-h">Prestação de Serviço</div>
     <form id="formServico" class="card-panel z-depth-1">
       <input type="hidden" id="servicoEditId" value="">
       <div class="row">
-        <div class="input-field col s12 m6">
-          <select id="servicoCliente">
-            <option value="" disabled selected>Selecione o cliente</option>
-          </select>
-          <label for="servicoCliente">Cliente</label>
-        </div>
-        <div class="input-field col s12 m6">
-          <input id="servicoValor" type="number" step="0.01">
-          <label for="servicoValor">Valor (R$)</label>
-        </div>
+        <div class="input-field col s12 m6"><select id="servicoCliente"><option value="" disabled selected>Selecione o cliente</option></select><label for="servicoCliente">Cliente</label></div>
+        <div class="input-field col s12 m6"><input id="servicoValor" type="number" step="0.01"><label for="servicoValor">Valor (R$)</label></div>
       </div>
+      <div class="row"><div class="input-field col s12"><input id="servicoDesc" type="text"><label for="servicoDesc">Serviço Prestado</label></div></div>
       <div class="row">
-        <div class="input-field col s12">
-          <input id="servicoDesc" type="text">
-          <label for="servicoDesc">Serviço Prestado</label>
-        </div>
-      </div>
-      <div class="row">
-        <div class="input-field col s12 m4">
-          <select id="servicoParcelas">
-            <option value="1">1x</option>
-            <option value="2">2x</option>
-            <option value="3">3x</option>
-            <option value="4">4x</option>
-            <option value="5">5x</option>
-            <option value="6">6x</option>
-            <option value="12">12x</option>
-          </select>
-          <label for="servicoParcelas">Parcelas</label>
-        </div>
-        <div class="input-field col s12 m8" id="servicoVencimentosContainer" style="display:block;">
-          <div id="servicoVencimentos" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
-        </div>
+        <div class="input-field col s12 m4"><select id="servicoParcelas"><option value="1">1x</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="12">12x</option></select><label for="servicoParcelas">Parcelas</label></div>
+        <div class="input-field col s12 m8" id="servicoVencimentosContainer" style="display:block;"><div id="servicoVencimentos" style="display:flex;gap:8px;flex-wrap:wrap;"></div></div>
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="btn blue" type="button" id="btnServico" style="flex:1">Registrar Serviço</button>
-        <button type="button" id="btnCancelarServico" class="btn grey" style="display:none;flex:1">Cancelar</button>
+        <button class="btn" type="button" id="btnServico" style="flex:1">Registrar Serviço</button>
+        <button type="button" id="btnCancelarServico" class="btn" style="display:none;flex:1">Cancelar</button>
       </div>
     </form>
 
     <div class="section-h">Serviços Registrados</div>
-    <input id="filterServicos" class="table-filter" placeholder="Filtrar serviços..." />
+    <input id="filterServicos" class="table-filter" placeholder="Pesquisa global..." />
     <div class="scroll-table">
       <table class="highlight responsive-table" id="servicosTable">
-        <thead>
-          <tr>
-            <th>Cliente</th>
-            <th>Serviço</th>
-            <th>Valor</th>
-            <th>Parcelas</th>
-            <th>Vencimentos</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Parcelas</th><th>Vencimentos</th><th>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
 
-    <!-- Financeiro -->
     <div class="section-h">Financeiro</div>
     <form class="card-panel z-depth-1">
       <div class="row">
-        <div class="input-field col s12 m6">
+        <div class="input-field col s12 m3">
+          <input id="finDataLanc" type="date">
+          <label for="finDataLanc" class="active">Data Lanç.</label>
+        </div>
+        <div class="input-field col s12 m4">
           <input id="finDesc" type="text">
           <label for="finDesc">Descrição</label>
         </div>
-        <div class="input-field col s12 m3">
+        <div class="input-field col s12 m2">
           <input id="finValor" type="number" step="0.01">
           <label for="finValor">Valor (R$)</label>
         </div>
         <div class="input-field col s12 m3">
           <select id="finTipo">
-            <option value="entrada">Entrada</option>
-            <option value="saida">Saída</option>
+            <option value="entrada">Receita</option>
+            <option value="saida">Despesa</option>
           </select>
           <label for="finTipo">Tipo</label>
         </div>
       </div>
-      <button class="btn blue" type="button" id="btnFinanceiro" style="width:100%">Registrar Movimentação</button>
+      <div class="row">
+        <div class="input-field col s12">
+          <input id="finObs" type="text" maxlength="240">
+          <label for="finObs">Observação</label>
+        </div>
+      </div>
+      <button class="btn" type="button" id="btnFinanceiro" style="width:100%">Registrar Movimentação</button>
     </form>
 
+    <div class="section-h">Calendário Financeiro</div>
+    <div class="card-panel z-depth-1" style="padding:10px;">
+      <div id="financeiroCalendar"></div>
+    </div>
+
     <div class="section-h">Financeiro Histórico</div>
-    <input id="filterFinanceiro" class="table-filter" placeholder="Filtrar financeiro..." />
+    <input id="filterFinanceiro" class="table-filter" placeholder="Pesquisa global..." />
     <div class="scroll-table">
       <table class="highlight responsive-table" id="financeiroTable">
         <thead>
@@ -457,7 +242,9 @@
             <th>Tipo</th>
             <th>Descrição</th>
             <th>Valor (R$)</th>
+            <th>Data Lanç.</th>
             <th>Vencimento</th>
+            <th>Observação</th>
             <th>Avisos</th>
             <th>Ações</th>
           </tr>
@@ -466,508 +253,23 @@
       </table>
     </div>
 
-    <!-- Saldo -->
     <div class="section-h">Saldo Atual</div>
     <div style="margin-bottom:32px;">
-      <input id="saldoAtual" readonly class="input-field center" style="width:160px;font-weight:bold;text-align:center">
+      <input id="saldoAtual" readonly class="input-field center" style="width:180px;font-weight:bold;text-align:center">
     </div>
   </div>
 
-  <!-- Floating Import/Export -->
   <div class="floating-action-btn">
-    <button id="btnExportExcel" class="btn-floating btn-large green tooltipped" data-position="left" data-tooltip="Exportar Excel">
-      <span class="material-icons">file_download</span>
-    </button>
-    <button id="btnImportExcel" class="btn-floating btn-large blue tooltipped" data-position="left" data-tooltip="Importar Excel">
-      <span class="material-icons">file_upload</span>
-    </button>
+    <button id="btnExportExcel" class="btn-floating btn-large tooltipped" data-position="left" data-tooltip="Exportar Excel"><span class="material-icons">file_download</span></button>
+    <button id="btnImportExcel" class="btn-floating btn-large tooltipped" data-position="left" data-tooltip="Importar Excel"><span class="material-icons">file_upload</span></button>
     <input type="file" id="inputImportExcel" accept=".xlsx,.xls" style="display:none"/>
   </div>
 
-  <!-- Login overlay (visível até o usuário autenticar) -->
-  <div id="authOverlay" style="display:none;">
-    <div id="authBox" role="dialog" aria-labelledby="authTitle" aria-modal="true">
-      <h5 id="authTitle">Acesso</h5>
-      <p id="authMsg" style="margin-top:0;margin-bottom:6px;color:#555">Informe suas credenciais</p>
-      <div class="row" style="margin-bottom:8px;">
-        <div class="input-field col s12">
-          <input id="authUser" type="text" autocomplete="username" />
-          <label for="authUser">Usuário</label>
-        </div>
-        <div class="input-field col s12">
-          <input id="authPass" type="password" autocomplete="current-password" />
-          <label for="authPass">Senha</label>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button id="btnAuth" class="btn blue" style="flex:1">Entrar</button>
-        <button id="btnShowUsers" class="btn grey" style="flex:1;display:none">Usuários</button>
-      </div>
-      <div style="margin-top:12px;font-size:0.85rem;color:#666">
-        Observação: credenciais administrativas são criadas na primeira execução. Elas não são exibidas na interface por segurança.
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal/section de gerenciamento de usuários (apenas para admin) -->
-  <div id="userManagementModal" style="display:none; position:fixed; z-index:9998; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.42); align-items:center; justify-content:center;">
-    <div style="width:720px; max-width:94vw; background:#fff; border-radius:8px; padding:12px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <h6 style="margin:0">Gerenciar Usuários</h6>
-        <button id="closeUserModal" class="btn-flat"><span class="material-icons">close</span></button>
-      </div>
-      <div style="display:flex;gap:12px;margin-top:12px;">
-        <div style="flex:1;">
-          <div class="input-field">
-            <input id="newUserLogin" type="text" autocomplete="username"><label for="newUserLogin">Usuário</label>
-          </div>
-          <div class="input-field">
-            <input id="newUserPass" type="password" autocomplete="new-password"><label for="newUserPass">Senha</label>
-          </div>
-          <div class="input-field">
-            <select id="newUserRole">
-              <option value="user" selected>Usuário</option>
-              <option value="admin">Administrador</option>
-            </select>
-            <label for="newUserRole">Permissão</label>
-          </div>
-          <button id="btnAddUser" class="btn green" style="width:100%">Adicionar Usuário</button>
-        </div>
-        <div style="flex:1;">
-          <h6 style="margin-top:0">Usuários</h6>
-          <div id="usersList"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Libs -->
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-
-  <!-- Firebase (compat v8) - necessário para o app.js que usa compat API -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
-  <!-- Authentication + Vencimento fix (não exibe credenciais em tela; senhas armazenadas como hash) -->
-  <script>
-    (function(){
-      // ---------- Helpers for date handling ----------
-      function formatISODate(date){
-        const y = date.getFullYear();
-        const m = ('0'+(date.getMonth()+1)).slice(-2);
-        const d = ('0'+date.getDate()).slice(-2);
-        return y + '-' + m + '-' + d;
-      }
-      function parseDateInput(val){
-        // Parse yyyy-mm-dd reliably without timezone shifts
-        if(!val) return new Date();
-        const parts = val.split('-').map(Number);
-        if(parts.length !== 3) return new Date(val);
-        return new Date(parts[0], parts[1]-1, parts[2]);
-      }
-      function addDaysToDate(date, days){
-        const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        d.setDate(d.getDate() + Number(days));
-        return d;
-      }
-
-      // ---------- Password hashing (SHA-256) ----------
-      async function hashPassword(pass){
-        // returns hex string
-        const enc = new TextEncoder();
-        const data = enc.encode(pass);
-        const hashBuf = await crypto.subtle.digest('SHA-256', data);
-        const hashArr = Array.from(new Uint8Array(hashBuf));
-        return hashArr.map(b => b.toString(16).padStart(2,'0')).join('');
-      }
-
-      // ---------- User storage (localStorage) ----------
-      const STORAGE_KEY = 'app_users_v2';
-      const CURRENT_KEY = 'app_current_user_v2';
-
-      async function initUsers(){
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if(!raw){
-          // create default admin (user: admin, pass: L@b@pl2026) but DO NOT display it anywhere
-          const adminPassHash = await hashPassword('L@b@pl2026');
-          const defaultUsers = [
-            { user: 'admin', passHash: adminPassHash, role: 'admin' }
-          ];
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultUsers));
-        } else {
-          // ensure admin exists (in case older versions changed key)
-          try {
-            const arr = JSON.parse(raw);
-            if(!arr.find(u=>u.user === 'admin')){
-              const adminPassHash = await hashPassword('L@b@pl2026');
-              arr.push({ user: 'admin', passHash: adminPassHash, role: 'admin' });
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-            }
-          } catch(e){
-            // reset if corrupted
-            const adminPassHash = await hashPassword('L@b@pl2026');
-            localStorage.setItem(STORAGE_KEY, JSON.stringify([{ user: 'admin', passHash: adminPassHash, role: 'admin' }]));
-          }
-        }
-      }
-
-      function getUsers(){
-        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-        catch(e){ return []; }
-      }
-      function saveUsers(arr){ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
-
-      async function addUser(user, pass, role){
-        const arr = getUsers();
-        if(arr.find(u=>u.user === user)) throw new Error('Usuário já existe');
-        const passHash = await hashPassword(pass);
-        arr.push({ user, passHash, role });
-        saveUsers(arr);
-      }
-
-      function removeUser(user){
-        let arr = getUsers();
-        arr = arr.filter(u=>u.user !== user);
-        saveUsers(arr);
-      }
-
-      async function checkCredentials(user, pass){
-        const arr = getUsers();
-        const hash = await hashPassword(pass);
-        return arr.find(u=>u.user === user && u.passHash === hash) || null;
-      }
-
-      // ---------- UI & flow ----------
-      const authOverlay = document.getElementById('authOverlay');
-      const btnAuth = document.getElementById('btnAuth');
-      const authUser = document.getElementById('authUser');
-      const authPass = document.getElementById('authPass');
-      const authMsg = document.getElementById('authMsg');
-      const btnLogout = document.getElementById('btnLogout');
-      const liUserManagement = document.getElementById('liUserManagement');
-      const btnShowUsers = document.getElementById('btnShowUsers');
-
-      const userModal = document.getElementById('userManagementModal');
-      const btnAddUser = document.getElementById('btnAddUser');
-      const usersList = document.getElementById('usersList');
-      const newUserLogin = document.getElementById('newUserLogin');
-      const newUserPass = document.getElementById('newUserPass');
-      const newUserRole = document.getElementById('newUserRole');
-      const closeUserModal = document.getElementById('closeUserModal');
-
-      async function bootAuth(){
-        await initUsers();
-        // if not logged, show overlay
-        if(!getCurrentUser()){
-          showAuthOverlay();
-        } else {
-          updateAuthUI();
-        }
-      }
-
-      function showAuthOverlay(){
-        authOverlay.style.display = 'flex';
-        authUser.focus();
-      }
-      function hideAuthOverlay(){
-        authOverlay.style.display = 'none';
-      }
-
-      function getCurrentUser(){
-        try { return JSON.parse(localStorage.getItem(CURRENT_KEY)); } catch(e){ return null; }
-      }
-      function setCurrentUser(uObj){
-        localStorage.setItem(CURRENT_KEY, JSON.stringify(uObj));
-        updateAuthUI();
-      }
-      function clearCurrentUser(){
-        localStorage.removeItem(CURRENT_KEY);
-        updateAuthUI();
-      }
-
-      function updateAuthUI(){
-        const cu = getCurrentUser();
-        if(cu){
-          btnLogout.style.display='inline-block';
-          if(cu.role === 'admin'){
-            liUserManagement.style.display = '';
-            btnShowUsers.style.display = '';
-          } else {
-            liUserManagement.style.display = 'none';
-            btnShowUsers.style.display = 'none';
-          }
-          hideAuthOverlay();
-        } else {
-          btnLogout.style.display='none';
-          liUserManagement.style.display = 'none';
-          btnShowUsers.style.display = 'none';
-        }
-      }
-
-      function renderUsersList(){
-        const arr = getUsers();
-        usersList.innerHTML = '';
-        arr.forEach(u=>{
-          const el = document.createElement('div');
-          el.style.display='flex';
-          el.style.justifyContent='space-between';
-          el.style.alignItems='center';
-          el.style.padding='6px 4px';
-          el.innerHTML = '<div><strong>'+u.user+'</strong> <small style="color:#666">('+u.role+')</small></div>';
-          if(u.user !== 'admin'){
-            const btnDel = document.createElement('button');
-            btnDel.className = 'btn-flat';
-            btnDel.innerHTML = '<span class="material-icons" style="color:#b71c1c">delete</span>';
-            btnDel.onclick = ()=>{ if(confirm('Remover usuário '+u.user+'?')){ removeUser(u.user); renderUsersList(); }};
-            el.appendChild(btnDel);
-          }
-          usersList.appendChild(el);
-        });
-      }
-
-      document.getElementById('liUserManagement').addEventListener('click', ()=> { renderUsersList(); userModal.style.display='flex'; });
-      closeUserModal.addEventListener('click', ()=> { userModal.style.display='none'; });
-      btnShowUsers.addEventListener('click', ()=> { renderUsersList(); userModal.style.display='flex'; });
-
-      btnAddUser.addEventListener('click', async ()=>{
-        const u = newUserLogin.value && newUserLogin.value.trim();
-        const p = newUserPass.value && newUserPass.value.trim();
-        const r = newUserRole.value || 'user';
-        if(!u || !p){ alert('Preencha usuário e senha'); return; }
-        try{
-          await addUser(u,p,r);
-          newUserLogin.value=''; newUserPass.value=''; newUserRole.value='user';
-          M.updateTextFields && M.updateTextFields();
-          renderUsersList();
-          alert('Usuário criado');
-        }catch(e){ alert(e.message); }
-      });
-
-      // login
-      btnAuth.addEventListener('click', async ()=>{
-        const u = authUser.value && authUser.value.trim();
-        const p = authPass.value && authPass.value.trim();
-        if(!u || !p){ authMsg.textContent = 'Digite usuário e senha'; return; }
-        const matched = await checkCredentials(u,p);
-        if(matched){
-          setCurrentUser({ user: matched.user, role: matched.role });
-          authUser.value=''; authPass.value='';
-          authMsg.textContent = 'Autenticado';
-        } else {
-          authMsg.textContent = 'Credenciais inválidas';
-        }
-      });
-
-      // logout
-      btnLogout.addEventListener('click', ()=>{
-        if(confirm('Deseja sair?')){ clearCurrentUser(); showAuthOverlay(); }
-      });
-
-      // Enter to submit
-      authPass.addEventListener('keyup', (ev)=>{ if(ev.key === 'Enter') btnAuth.click(); });
-      authUser.addEventListener('keyup', (ev)=>{ if(ev.key === 'Enter') btnAuth.click(); });
-
-      // ---------- Vencimento & custo: calcular sempre que inputs mudarem ----------
-      const pedidoData = document.getElementById('pedidoData');
-      const pedidoVenc = document.getElementById('pedidoVenc');
-      const pedidoKg = document.getElementById('pedidoKg');
-      const pedidoPrecoKg = document.getElementById('pedidoPrecoKg');
-      const pedidoCusto = document.getElementById('pedidoCusto');
-      const pedidoVencDateHidden = document.getElementById('pedidoVencDate');
-
-      function computeVencimentoAndCusto(){
-        const pedidoDataVal = pedidoData && pedidoData.value;
-        const pedidoVencOpt = pedidoVenc && pedidoVenc.value;
-        const kgNum = parseFloat(pedidoKg && pedidoKg.value) || 0;
-        const precoNum = parseFloat(pedidoPrecoKg && pedidoPrecoKg.value) || 0;
-
-        // custo
-        const custoFinal = (kgNum * precoNum) || 0;
-        if(pedidoCusto) pedidoCusto.value = custoFinal.toFixed(2);
-
-        // vencimento
-        const baseDate = parseDateInput(pedidoDataVal || formatISODate(new Date()));
-        let vencDateStr = '';
-        if(!pedidoVencOpt || pedidoVencOpt === ''){
-          vencDateStr = '';
-        } else if(pedidoVencOpt === 'avista'){
-          vencDateStr = 'À vista';
-        } else {
-          const dias = parseInt(pedidoVencOpt, 10);
-          if(!isNaN(dias)){
-            const vd = addDaysToDate(baseDate, dias);
-            vencDateStr = formatISODate(vd);
-          } else {
-            vencDateStr = '';
-          }
-        }
-        if(pedidoVencDateHidden) pedidoVencDateHidden.value = vencDateStr;
-      }
-
-      // attach listeners
-      if(pedidoData) pedidoData.addEventListener('change', computeVencimentoAndCusto);
-      if(pedidoVenc) pedidoVenc.addEventListener('change', computeVencimentoAndCusto);
-      if(pedidoKg) pedidoKg.addEventListener('input', computeVencimentoAndCusto);
-      if(pedidoPrecoKg) pedidoPrecoKg.addEventListener('input', computeVencimentoAndCusto);
-
-      // ensure a computation before any attempt to save (in case app.js reads the hidden field)
-      const btnPedido = document.getElementById('btnPedido');
-      if(btnPedido) btnPedido.addEventListener('click', computeVencimentoAndCusto);
-
-      // init selects (Materialize) and compute initial values
-      document.addEventListener('DOMContentLoaded', function() {
-        var elems = document.querySelectorAll('select');
-        M && M.FormSelect && M.FormSelect.init(elems);
-        computeVencimentoAndCusto();
-      });
-
-      // Start auth boot
-      bootAuth();
-
-      // expose helpers for app.js if needed
-      window.__appAuthHelpers = {
-        getUsers,
-        addUser,
-        removeUser,
-        getCurrentUser,
-        computeVencimentoAndCusto,
-        formatISODate,
-        parseDateInput,
-        addDaysToDate
-      };
-    })();
-  </script>
-
-  <!-- App JS (integra com Firestore) -->
   <script src="app.js"></script>
-
-  <!-- UI Enhancements: column filters + theme switcher (não altera lógica do app.js) -->
-  <script>
-    (function(){
-      // Utilities
-      function addColumnFiltersToTable(tableId){
-        const table = document.getElementById(tableId);
-        if(!table) return;
-        const thead = table.querySelector('thead');
-        if(!thead) return;
-        // Avoid duplicating filter row
-        if(thead.querySelector('.col-filter-row')) return;
-
-        const headerRow = thead.querySelector('tr');
-        if(!headerRow) return;
-        const filterRow = document.createElement('tr');
-        filterRow.className = 'col-filter-row';
-        Array.from(headerRow.children).forEach((th, idx) => {
-          const thFilter = document.createElement('th');
-          // If this is the actions column (last) skip showing input
-          const thText = (th.textContent || '').trim().toLowerCase();
-          if(thText === 'ações' || idx === headerRow.children.length - 1){
-            thFilter.innerHTML = '';
-            thFilter.style.minWidth = th.style.minWidth || '60px';
-          } else {
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.className = 'col-filter-input';
-            input.dataset.colIndex = idx;
-            input.placeholder = 'Filtrar';
-            input.addEventListener('input', function(){ applyColumnFilters(table); });
-            thFilter.appendChild(input);
-          }
-          filterRow.appendChild(thFilter);
-        });
-        thead.appendChild(filterRow);
-      }
-
-      function applyColumnFilters(table){
-        const inputs = Array.from(table.querySelectorAll('.col-filter-input'));
-        const rows = Array.from(table.querySelectorAll('tbody tr'));
-        rows.forEach(row => {
-          let visible = true;
-          inputs.forEach(inp => {
-            const idx = Number(inp.dataset.colIndex);
-            const val = (inp.value || '').trim().toLowerCase();
-            if(!val) return;
-            // some rows in mobile layout are flex and cells might not align by index; guard
-            const cell = row.children[idx];
-            const cellText = cell ? (cell.innerText || '').trim().toLowerCase() : '';
-            if(cellText.indexOf(val) === -1) visible = false;
-          });
-          row.style.display = visible ? '' : 'none';
-        });
-      }
-
-      // Observe tbody changes to re-run filters when app.js replaces rows
-      function observeTableBody(tableId){
-        const table = document.getElementById(tableId);
-        if(!table) return;
-        const tbody = table.querySelector('tbody');
-        if(!tbody) return;
-        const mo = new MutationObserver(() => {
-          // reapply column-filter when rows change
-          applyColumnFilters(table);
-        });
-        mo.observe(tbody, { childList: true, subtree: false });
-      }
-
-      // Apply to all table ids used in the app
-      const TABLE_IDS = ['clientesTable','mpTable','pedidosTable','financeiroTable','servicosTable'];
-
-      function initColumnFilters(){
-        TABLE_IDS.forEach(id => {
-          addColumnFiltersToTable(id);
-          observeTableBody(id);
-        });
-      }
-
-      // Theme toggling: sap-desktop for width > 900, ios-mobile for <= 900
-      function applyAdaptiveTheme(){
-        const isDesktop = window.innerWidth > 900;
-        document.body.classList.toggle('sap-desktop', isDesktop);
-        document.body.classList.toggle('ios-mobile', !isDesktop);
-      }
-
-      // Ensure initialization runs whether DOMContentLoaded already fired or not
-      function ready(fn){
-        if(document.readyState === 'complete' || document.readyState === 'interactive'){
-          setTimeout(fn, 50);
-        } else {
-          document.addEventListener('DOMContentLoaded', fn);
-        }
-      }
-
-      ready(function(){
-        // Initialize filters
-        initColumnFilters();
-        // Apply theme now and on resize
-        applyAdaptiveTheme();
-        window.addEventListener('resize', function(){ applyAdaptiveTheme(); });
-
-        // Also make sure Materialize selects are re-initialized for any dynamically added selects
-        if(window.M && M.FormSelect){
-          M.FormSelect.init(document.querySelectorAll('select'));
-        }
-
-        // Hook global filter inputs already present in page to also trigger column filters
-        const globalFilterBindings = [
-          { inputId: 'filterClientes', tableId: 'clientesTable' },
-          { inputId: 'filterMP', tableId: 'mpTable' },
-          { inputId: 'filterPedidos', tableId: 'pedidosTable' },
-          { inputId: 'filterFinanceiro', tableId: 'financeiroTable' },
-          { inputId: 'filterServicos', tableId: 'servicosTable' }
-        ];
-        globalFilterBindings.forEach(({inputId, tableId}) => {
-          const inp = document.getElementById(inputId);
-          const table = document.getElementById(tableId);
-          if(inp && table){
-            inp.addEventListener('input', function(){
-              // combine global filter with column filters
-              applyColumnFilters(table);
-            });
-          }
-        });
-      });
-    })();
-  </script>
 </body>
 </html>
