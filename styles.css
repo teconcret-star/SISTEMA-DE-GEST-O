@@ -1,0 +1,204 @@
+/* ===============================
+   SAP CLASSIC THEME (ALV-LIKE)
+   =============================== */
+
+:root{
+  --sap-bg: #dfe6ee;
+  --sap-panel: #d5dde6;
+  --sap-toolbar: #c8d2dd;
+  --sap-head1: #d3dde7;
+  --sap-head2: #bdc9d6;
+  --sap-grid: #8fa1b3;
+  --sap-grid-soft: #a9b8c8;
+  --sap-line-a: #e7eef5;
+  --sap-line-b: #dce7f1;
+  --sap-select: #b8d7ea;
+  --sap-text: #0f1f2f;
+  --sap-btn1: #d9e3ee;
+  --sap-btn2: #b8c8d8;
+}
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: Tahoma, "MS Sans Serif", Arial, sans-serif;
+  font-size: 13px;
+  color: var(--sap-text);
+  background: linear-gradient(#cfd9e3, var(--sap-bg));
+  max-width: 100%;
+  padding: 0;
+}
+
+/* Navbar */
+nav, .nav-wrapper {
+  height: 42px !important;
+  line-height: 42px !important;
+  background: linear-gradient(#9cb3c8, #7f9ab3) !important;
+  border-bottom: 1px solid #5f7890;
+  box-shadow: inset 0 1px #c7d7e6;
+}
+.brand-logo {
+  font-size: 18px !important;
+  font-style: italic;
+  font-weight: 700 !important;
+  color: #081826 !important;
+}
+
+/* Layout */
+.container{
+  width: 98% !important;
+  max-width: 1600px !important;
+  margin: 8px auto !important;
+  padding: 6px !important;
+}
+
+/* Section titles */
+.section-h{
+  margin: 10px 0 4px 0;
+  padding: 4px 8px;
+  font-size: 18px;
+  font-style: italic;
+  font-weight: 700;
+  color: #0e2133;
+  background: linear-gradient(#c9d4df, #b8c5d2);
+  border: 1px solid #8ea1b3;
+}
+
+/* Card/form panel */
+.card-panel, form.card-panel {
+  margin: 0 0 8px 0 !important;
+  padding: 10px !important;
+  background: var(--sap-panel) !important;
+  border: 1px solid var(--sap-grid);
+  box-shadow: inset 0 1px #eef3f8 !important;
+  border-radius: 0 !important;
+}
+
+/* Inputs/selects SAP-like */
+input, select, textarea {
+  background: #edf3f8 !important;
+  border: 1px solid #7e93a8 !important;
+  border-radius: 0 !important;
+  height: 28px !important;
+  box-sizing: border-box;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: #3d5f7f !important;
+  box-shadow: inset 0 0 0 1px #bfd0e0 !important;
+}
+.input-field { margin-top: 0.35rem !important; margin-bottom: 0.35rem !important; }
+.input-field > label { color: #23384d !important; font-size: 12px !important; }
+.input-field input[type=text]:focus + label,
+.input-field input[type=number]:focus + label,
+.input-field input[type=date]:focus + label,
+.input-field input[type=email]:focus + label { color: #10263d !important; }
+
+/* Buttons SAP-like */
+.btn, .btn-small, .btn-floating, .btn-flat {
+  background: linear-gradient(var(--sap-btn1), var(--sap-btn2)) !important;
+  color: #0c2237 !important;
+  border: 1px solid #7d91a4 !important;
+  border-radius: 2px !important;
+  box-shadow: inset 0 1px #f3f7fb !important;
+  text-transform: none !important;
+  font-weight: 600;
+}
+.btn:hover, .btn-small:hover, .btn-floating:hover {
+  filter: brightness(0.98);
+}
+.btn .material-icons, .btn-small .material-icons { color: #0e2b46 !important; }
+
+/* Scroll table wrapper */
+.scroll-table{
+  margin: 0 0 10px 0 !important;
+  padding: 0 !important;
+  border: 1px solid var(--sap-grid);
+  background: #cfd9e3;
+  border-radius: 0 !important;
+  overflow: auto;
+}
+
+/* Table SAP classic */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: #dce6ef;
+}
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: linear-gradient(var(--sap-head1), var(--sap-head2));
+  color: #0d243a;
+  font-weight: 700;
+  border: 1px solid var(--sap-grid);
+  padding: 4px 6px;
+  white-space: nowrap;
+}
+tbody td {
+  border: 1px solid var(--sap-grid-soft);
+  padding: 3px 6px;
+  vertical-align: middle;
+}
+tbody tr:nth-child(odd) { background: var(--sap-line-a); }
+tbody tr:nth-child(even){ background: var(--sap-line-b); }
+tbody tr:hover { background: var(--sap-select) !important; }
+
+/* Linha em edição */
+.editing-row {
+  background: #fff6b8 !important;
+}
+
+/* Filtros globais e de coluna */
+.table-filter,
+.col-filter-row input.col-filter-input{
+  width: 100%;
+  box-sizing: border-box;
+  height: 26px !important;
+  padding: 2px 6px !important;
+  font-size: 12px !important;
+  border: 1px solid #7d91a4 !important;
+  background: #f2f6fa !important;
+  border-radius: 0 !important;
+  margin: 4px 0;
+}
+.col-filter-row th{
+  padding: 2px 4px !important;
+  background: #c7d2de !important;
+  border: 1px solid var(--sap-grid);
+}
+.col-filter-row th:last-child input.col-filter-input{ display:none; }
+
+/* Side menu */
+#sideTrigger{
+  background: linear-gradient(#c5d0dc,#b2c1cf) !important;
+  border: 1px solid #7f93a7 !important;
+  position: fixed; left: 0; top: 42px; width: 36px; height: 42px;
+  display: flex; align-items: center; justify-content: center; z-index: 160; cursor: pointer;
+}
+#sideMenu{
+  background: #d1dbe6 !important;
+  border-right: 1px solid #7f93a7 !important;
+  position: fixed; left: 0; top: 42px; height: calc(100% - 42px); width: 260px;
+  transform: translateX(-260px); transition: transform 0.2s; z-index: 159;
+}
+#sideMenu.open { transform: translateX(0); }
+#sideMenu ul { margin: 0; padding: 6px; list-style: none; }
+#sideMenu li { padding: 10px; border: 1px solid transparent; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+#sideMenu li:hover{ background: #bcd0e2 !important; border-color: #7f93a7; }
+#menuOverlay { position: fixed; top: 42px; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 158; display: none; }
+#menuOverlay.visible { display: block; }
+
+/* Floating buttons */
+.floating-action-btn{ position: fixed; bottom: 12px; right: 12px; display: flex; gap: 8px; z-index: 99; }
+
+/* Responsive */
+@media (max-width: 900px){
+  body { font-size: 12px; }
+  .brand-logo { font-size: 15px !important; }
+  th, td { font-size: 12px; }
+  #sideMenu { width: 80vw; transform: translateX(-80vw); }
+  #sideMenu.open { transform: translateX(0); }
+}
