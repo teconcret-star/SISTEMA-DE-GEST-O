@@ -126,7 +126,110 @@ input:focus, select:focus, textarea:focus { border-color: #3d5f7f !important; bo
 .sap-saida .value { color: #c62828; }
 
 @media (max-width: 900px){
-  body { font-size: 12px; } .brand-logo { font-size: 15px !important; } th, td { font-size: 12px; }
-  #sideMenu { width: 80vw; transform: translateX(-80vw); } #sideMenu.open { transform: translateX(0); }
+  body { font-size: 12px; }
+  .brand-logo { font-size: 15px !important; }
+  th, td { font-size: 12px; }
+  #sideMenu { width: 80vw; transform: translateX(-80vw); }
+  #sideMenu.open { transform: translateX(0); }
   .sap-summary-card .value { font-size: 16px; }
+}
+
+/* ===============================
+   MOBILE (≤ 600 px)
+   =============================== */
+@media (max-width: 600px){
+
+  /* Base typography */
+  body { font-size: 14px; }
+
+  /* Navbar */
+  nav, .nav-wrapper { height: 48px !important; line-height: 48px !important; }
+  .brand-logo {
+    font-size: 13px !important;
+    /* push text away from the left store-icon and give right breathing room */
+    left: 44px !important;
+    right: 8px !important;
+    width: auto !important;
+    transform: none !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left !important;
+    position: absolute !important;
+  }
+
+  /* Side-menu trigger: match new nav height and make it larger for touch */
+  #sideTrigger {
+    top: 48px;
+    width: 44px;
+    height: 48px;
+  }
+  #sideTrigger .material-icons { font-size: 26px; }
+
+  /* Side-menu: start just below the new nav height */
+  #sideMenu {
+    top: 48px;
+    height: calc(100% - 48px);
+    width: 85vw;
+    transform: translateX(-85vw);
+  }
+  #menuOverlay { top: 48px; }
+
+  /* Ensure main content is never hidden behind the fixed trigger (44 px wide) */
+  .container {
+    width: 100% !important;
+    margin: 4px auto !important;
+    padding: 4px 8px 4px 52px !important; /* left: 44px trigger + 8px gap */
+    box-sizing: border-box;
+  }
+
+  /* Section headers */
+  .section-h { font-size: 15px; padding: 6px 10px; margin: 12px 0 6px 0; }
+
+  /* Card panels — give more breathing room */
+  .card-panel, form.card-panel {
+    padding: 12px !important;
+    margin: 0 0 10px 0 !important;
+  }
+
+  /* Input fields: bigger height for touch */
+  input, select, textarea {
+    height: 40px !important;
+    font-size: 14px !important;
+    padding: 0 8px !important;
+  }
+  .input-field > label { font-size: 13px !important; }
+  .input-field { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
+
+  /* Buttons: minimum 44 px touch target */
+  .btn, .btn-small {
+    height: 44px !important;
+    line-height: 44px !important;
+    font-size: 14px !important;
+    padding: 0 16px !important;
+  }
+  .btn .material-icons, .btn-small .material-icons {
+    line-height: 44px !important;
+  }
+
+  /* Tables */
+  .scroll-table { -webkit-overflow-scrolling: touch; }
+  .scroll-table thead th { font-size: 12px; padding: 6px 8px; }
+  .scroll-table tbody td { font-size: 12px; padding: 6px 8px; }
+
+  /* Global filter inputs */
+  .table-filter { height: 40px !important; font-size: 13px !important; }
+
+  /* Summary cards — stack vertically on very small screens */
+  .sap-summary-card { padding: 12px; }
+  .sap-summary-card .title { font-size: 12px; }
+  .sap-summary-card .value { font-size: 18px; }
+  .summary-cards-row { flex-direction: column !important; }
+
+  /* Floating action buttons — nudge up to avoid browser chrome */
+  .floating-action-btn { bottom: 20px; right: 16px; gap: 10px; }
+  .btn-floating.btn-large { width: 52px !important; height: 52px !important; line-height: 52px !important; }
+
+  /* Balance field */
+  #saldoAtual { width: 100% !important; font-size: 16px; }
 }
