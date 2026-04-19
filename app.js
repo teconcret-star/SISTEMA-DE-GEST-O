@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function setupColumnFilters(tableId){
     const table = document.getElementById(tableId); if(!table) return;
     const scrollTable = table.closest('.scroll-table'); if(!scrollTable) return;
-    if(scrollTable.previousElementSibling && scrollTable.previousElementSibling.classList.contains('table-filter-bar')) return;
+    if(scrollTable.dataset.hasFilterBar) return;
     const thead = table.querySelector('thead'); if(!thead) return;
     const headerRow = thead.querySelector('tr'); if(!headerRow) return;
     const headers = Array.from(headerRow.querySelectorAll('th'));
@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Per-column filter items
     headers.forEach((th, idx) => {
-      if(idx === headers.length - 1) return; // skip actions column
+      if(th.hasAttribute('data-no-filter')) return; // skip columns marked as no-filter
       const wrapper = document.createElement('div');
       wrapper.className = 'filter-col-item';
       const lbl = document.createElement('span');
@@ -282,6 +282,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     scrollTable.parentNode.insertBefore(filterBar, scrollTable);
+    scrollTable.dataset.hasFilterBar = '1';
   }
 
   window.applyColumnFilters = function(tableId){
