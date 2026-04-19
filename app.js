@@ -235,40 +235,75 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   // ====== FILTROS E PESQUISAS ======
-  function addFilter(inputId, tableId){
-    const input = document.getElementById(inputId); if(!input) return;
-    input.addEventListener('input', function(){
-      const txt = this.value.toLowerCase().trim(); const trs = document.querySelectorAll(`#${tableId} tbody tr`);
-      trs.forEach(tr => { tr.style.display = tr.innerText.toLowerCase().indexOf(txt) > -1 ? '' : 'none'; });
-    });
-  }
-
   function setupColumnFilters(tableId){
     const table = document.getElementById(tableId); if(!table) return;
+    const scrollTable = table.closest('.scroll-table'); if(!scrollTable) return;
+    if(scrollTable.previousElementSibling && scrollTable.previousElementSibling.classList.contains('table-filter-bar')) return;
     const thead = table.querySelector('thead'); if(!thead) return;
-    if(thead.querySelector('.col-filter-row')) return;
     const headerRow = thead.querySelector('tr'); if(!headerRow) return;
-    const filterRow = document.createElement('tr'); filterRow.className = 'col-filter-row';
     const headers = Array.from(headerRow.querySelectorAll('th'));
+
+    const filterBar = document.createElement('div');
+    filterBar.className = 'table-filter-bar';
+    filterBar.dataset.tableId = tableId;
+
+    // Global search item
+    const globalItem = document.createElement('div');
+    globalItem.className = 'filter-col-item filter-global-item';
+    const globalLabel = document.createElement('span');
+    globalLabel.className = 'filter-col-label';
+    globalLabel.innerHTML = '<span class="material-icons" style="font-size:14px;vertical-align:middle;">search</span> Busca Geral';
+    const globalInput = document.createElement('input');
+    globalInput.type = 'text';
+    globalInput.className = 'col-global-input';
+    globalInput.placeholder = 'Pesquisar em todas as colunas...';
+    globalInput.addEventListener('input', function(){ window.applyColumnFilters(tableId); });
+    globalItem.appendChild(globalLabel);
+    globalItem.appendChild(globalInput);
+    filterBar.appendChild(globalItem);
+
+    // Per-column filter items
     headers.forEach((th, idx) => {
-      const fth = document.createElement('th'); const isActionsCol = (idx === headers.length - 1);
-      const input = document.createElement('input'); input.type = 'text'; input.className = 'col-filter-input'; input.placeholder = isActionsCol ? '' : 'filtrar...'; input.dataset.colIndex = String(idx);
+      if(idx === headers.length - 1) return; // skip actions column
+      const wrapper = document.createElement('div');
+      wrapper.className = 'filter-col-item';
+      const lbl = document.createElement('span');
+      lbl.className = 'filter-col-label';
+      lbl.textContent = th.textContent.trim();
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'col-filter-input';
+      input.placeholder = 'filtrar...';
+      input.dataset.colIndex = String(idx);
       input.addEventListener('input', function(){ window.applyColumnFilters(tableId); });
-      fth.appendChild(input); filterRow.appendChild(fth);
+      wrapper.appendChild(lbl);
+      wrapper.appendChild(input);
+      filterBar.appendChild(wrapper);
     });
-    thead.appendChild(filterRow);
+
+    scrollTable.parentNode.insertBefore(filterBar, scrollTable);
   }
-  
+
   window.applyColumnFilters = function(tableId){
     const table = document.getElementById(tableId); if(!table) return;
-    const filters = Array.from(table.querySelectorAll('.col-filter-row .col-filter-input')).map(inp => ({ idx: Number(inp.dataset.colIndex), value: (inp.value || '').toLowerCase().trim() }));
+    const filterBar = document.querySelector(`.table-filter-bar[data-table-id="${tableId}"]`);
+    let globalFilter = '';
+    let colFilters = [];
+    if(filterBar){
+      const gi = filterBar.querySelector('.col-global-input');
+      if(gi) globalFilter = (gi.value || '').toLowerCase().trim();
+      colFilters = Array.from(filterBar.querySelectorAll('.col-filter-input')).map(inp => ({ idx: Number(inp.dataset.colIndex), value: (inp.value || '').toLowerCase().trim() }));
+    }
     const rows = table.querySelectorAll('tbody tr');
     rows.forEach(row => {
       let visible = true;
-      for(const f of filters){
-        if(!f.value) continue;
-        const cell = row.children[f.idx];
-        if(!(cell ? cell.innerText : '').toLowerCase().includes(f.value)){ visible = false; break; }
+      if(globalFilter && row.innerText.toLowerCase().indexOf(globalFilter) === -1){ visible = false; }
+      if(visible){
+        for(const f of colFilters){
+          if(!f.value) continue;
+          const cell = row.children[f.idx];
+          if(!(cell ? cell.innerText : '').toLowerCase().includes(f.value)){ visible = false; break; }
+        }
       }
       row.style.display = visible ? '' : 'none';
     });
@@ -280,7 +315,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  addFilter('filterClientes','clientesTable'); addFilter('filterMP','mpTable'); addFilter('filterPedidos','pedidosTable'); addFilter('filterFinanceiro','financeiroTable'); addFilter('filterServicos','servicosTable');
   setupColumnFilters('clientesTable'); setupColumnFilters('mpTable'); setupColumnFilters('pedidosTable'); setupColumnFilters('financeiroTable'); setupColumnFilters('servicosTable');
 
   // ====== EDIÇÃO GLOBAL (FORMS) ======
