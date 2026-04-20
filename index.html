@@ -154,6 +154,7 @@
 
     <div class="section-h">Financeiro</div>
     <form id="formFinanceiro" class="card-panel z-depth-1">
+      <input type="hidden" id="finEditId" value="">
       <div class="row">
         <div class="input-field col s12 m3"><input id="finDataLanc" type="date"><label for="finDataLanc" class="active">Data Lanç.</label></div>
         <div class="input-field col s12 m4"><input id="finDesc" type="text"><label for="finDesc">Descrição</label></div>
@@ -163,7 +164,10 @@
       <div class="row">
         <div class="input-field col s12"><input id="finObs" type="text" maxlength="240"><label for="finObs">Observação</label></div>
       </div>
-      <button class="btn blue" type="button" id="btnFinanceiro" style="width:100%">Registrar Movimentação</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn blue" type="button" id="btnFinanceiro" style="flex:1">Registrar Movimentação</button>
+        <button type="button" id="btnCancelarFinanceiro" class="btn grey" style="display:none;flex:1"><span class="material-icons left">close</span> Cancelar</button>
+      </div>
     </form>
 
     <div class="section-h">Calendário Financeiro</div>

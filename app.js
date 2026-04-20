@@ -123,9 +123,27 @@ document.addEventListener('DOMContentLoaded', function () {
   const btnFin = document.getElementById('btnFinanceiro');
   if(btnFin){ btnFin.addEventListener('click', function(e){ e.preventDefault(); registrarFinanceiro(); }); }
 
+  const btnCancelarFin = document.getElementById('btnCancelarFinanceiro');
+  if(btnCancelarFin){ btnCancelarFin.addEventListener('click', function(){ document.getElementById('finEditId').value = ''; document.getElementById('finDesc').value = ''; document.getElementById('finValor').value = ''; if(document.getElementById('finObs')) document.getElementById('finObs').value = ''; if(document.getElementById('finDataLanc')) document.getElementById('finDataLanc').value = ''; document.getElementById('finTipo').selectedIndex = 0; document.getElementById('btnFinanceiro').textContent = 'Registrar Movimentação'; btnCancelarFin.style.display = 'none'; M.updateTextFields(); M.FormSelect.init(document.getElementById('finTipo')); }); }
+
+  function abrirFinanceiroParaEdicao(id){
+    const mov = financeiro.find(m => m.id === id); if(!mov) return;
+    document.getElementById('finEditId').value = id;
+    document.getElementById('finDesc').value = mov.desc || '';
+    document.getElementById('finValor').value = mov.valor || '';
+    if(document.getElementById('finObs')) document.getElementById('finObs').value = mov.obs || '';
+    if(document.getElementById('finDataLanc') && mov.dataLanc){ const parts = mov.dataLanc.split('/'); if(parts.length===3) document.getElementById('finDataLanc').value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`; }
+    const tipoEl = document.getElementById('finTipo'); tipoEl.value = (String(mov.tipo).toLowerCase() === 'saida') ? 'saida' : 'entrada'; M.FormSelect.init(tipoEl);
+    document.getElementById('btnFinanceiro').textContent = 'Salvar Alterações';
+    document.getElementById('btnCancelarFinanceiro').style.display = 'inline-block';
+    M.updateTextFields();
+    document.getElementById('formFinanceiro').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
   async function registrarFinanceiro(desc, valor, tipo, chamadoPorPedido = false, vencStr = ""){
     let dataLanc = ""; let obs = "";
     if(!chamadoPorPedido){
+      const editId = document.getElementById('finEditId')?.value || null;
       desc = document.getElementById('finDesc').value.trim();
       valor = parseFloat(document.getElementById('finValor').value);
       tipo = document.getElementById('finTipo').value;
@@ -134,6 +152,26 @@ document.addEventListener('DOMContentLoaded', function () {
       dataLanc = finDataRaw ? formatDateToDDMMYYYY(parseDateInputAsLocal(finDataRaw)) : formatDateToDDMMYYYY(new Date());
       vencStr = "";
       if(!desc || isNaN(valor)) { M.toast({html:"Preencha corretamente descrição e valor!"}); return; }
+      try {
+        if(editId){
+          await collFinanceiro.doc(editId).set({ tipo, desc, valor, dataLanc, obs, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+          calcularSaldo();
+          document.getElementById('finEditId').value = '';
+          document.getElementById('btnFinanceiro').textContent = 'Registrar Movimentação';
+          document.getElementById('btnCancelarFinanceiro').style.display = 'none';
+          M.toast({html:'Movimentação atualizada!'});
+        } else {
+          await collFinanceiro.add({ tipo, desc, valor, dataLanc, obs, vencimento: vencStr, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+          calcularSaldo();
+          M.toast({html:'Movimentação registrada!'});
+        }
+        document.getElementById('finDesc').value = ""; document.getElementById('finValor').value = "";
+        if(document.getElementById('finObs')) document.getElementById('finObs').value = "";
+        if(document.getElementById('finDataLanc')) document.getElementById('finDataLanc').value = "";
+        document.getElementById('finTipo').selectedIndex = 0;
+        M.updateTextFields(); M.FormSelect.init(document.getElementById('finTipo'));
+      } catch(err){ console.error(err); showStatus('Erro ao registrar financeiro.', true); }
+      return;
     } else {
       dataLanc = formatDateToDDMMYYYY(new Date());
     }
@@ -141,14 +179,6 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       await collFinanceiro.add(obj);
       calcularSaldo();
-      if(!chamadoPorPedido){
-        document.getElementById('finDesc').value = ""; document.getElementById('finValor').value = "";
-        if(document.getElementById('finObs')) document.getElementById('finObs').value = "";
-        if(document.getElementById('finDataLanc')) document.getElementById('finDataLanc').value = "";
-        document.getElementById('finTipo').selectedIndex = 0;
-        M.updateTextFields(); M.FormSelect.init(document.getElementById('finTipo'));
-        M.toast({html:'Movimentação registrada!'});
-      }
     } catch(err){ console.error(err); showStatus('Erro ao registrar financeiro.', true); }
   }
 
@@ -429,7 +459,8 @@ document.addEventListener('DOMContentLoaded', function () {
         initialView: 'dayGridMonth', locale: 'pt-br', height: 'auto',
         headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth,listMonth' },
         events,
-        eventClick: function(info){ const ex = info.event.extendedProps || {}; alert(`Descrição: ${info.event.title}\nData Lanç.: ${ex.dataLanc || '-'}\nVencimento: ${ex.vencimento || '-'}\nObservação: ${ex.obs || '-'}`); },
+        eventClick: function(info){ const ex = info.event.extendedProps || {}; M.toast({html:`<b>${escapeHTML(info.event.title)}</b><br>Data Lanç.: ${escapeHTML(ex.dataLanc || '-')}<br>Vencimento: ${escapeHTML(ex.vencimento || '-')}<br>Obs.: ${escapeHTML(ex.obs || '-')}`, displayLength:4000}); },
+        eventDidMount: function(info){ info.el.title = 'Clique 2x para editar'; info.el.addEventListener('dblclick', function(){ abrirFinanceiroParaEdicao(info.event.id); }); },
         datesSet: function(info) {
           // O getMonth() no currentStart retorna exatamente o mês que está sendo visto
           const d = info.view.currentStart;
@@ -512,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function () {
     tds.forEach(td => {
       const field = td.getAttribute('data-field'); if(!field) return; const val = td.innerText; let input;
       if(collectionName === 'clientes'){ if(field === 'docTipo'){ input = document.createElement('select'); const optCpf = document.createElement('option'); optCpf.value='cpf'; optCpf.text='CPF'; const optCnpj = document.createElement('option'); optCnpj.value='cnpj'; optCnpj.text='CNPJ'; input.appendChild(optCpf); input.appendChild(optCnpj); input.value = (val.toLowerCase().indexOf('cnpj')>-1) ? 'cnpj' : 'cpf'; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else if(collectionName === 'mpList'){ if(field === 'saldo' || field === 'preco'){ input = document.createElement('input'); input.type='number'; input.step = (field==='preco' ? '0.01' : '1'); input.value = val.replace(/[^\d\.\-]/g,'') || 0; } else if(field === 'unidade'){ input = document.createElement('select'); const o1 = document.createElement('option'); o1.value='kg'; o1.text='kg'; const o2 = document.createElement('option'); o2.value='unidade'; o2.text='unidade'; input.appendChild(o1); input.appendChild(o2); input.value = val; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else if(collectionName === 'pedidos'){ if(field === 'kg' || field === 'precoKg' || field === 'custo'){ input = document.createElement('input'); input.type='number'; input.step = (field==='precoKg' || field==='custo' ? '0.01' : '1'); input.value = val.replace(/[^\d\.\-]/g,'') || 0; } else if(field === 'cliente'){ input = document.createElement('select'); const placeholder = document.createElement('option'); placeholder.value=''; placeholder.text='-- Selecionar cliente --'; placeholder.disabled=true; input.appendChild(placeholder); clientes.forEach((c) => { const o = document.createElement('option'); o.value = c.id; o.text = `${c.nome} (${c.doc || ''})`; input.appendChild(o); }); const match = clientes.find(c=>c.nome === val); input.value = match ? match.id : ''; } else if(field === 'produto'){ input = document.createElement('select'); const opts = ["CURE FILM H","CURE FILM HC","HARDSURF H","HARDSURF HC"]; const placeholder = document.createElement('option'); placeholder.value=''; placeholder.text='-- Selecionar produto --'; placeholder.disabled=true; input.appendChild(placeholder); opts.forEach(pn => { const o = document.createElement('option'); o.value = pn; o.text = pn; input.appendChild(o); }); input.value = val || ''; } else if(field === 'dataPedido' || field === 'vencimento'){ input = document.createElement('input'); input.type='date'; const parts = val.split('/'); if(parts.length===3) input.value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`; } else if(field === 'status'){ input = document.createElement('select'); const o1 = document.createElement('option'); o1.value='Pendente'; o1.text='Pendente'; const o2 = document.createElement('option'); o2.value='Pago'; o2.text='Pago'; const o3 = document.createElement('option'); o3.value='Cancelado'; o3.text='Cancelado'; input.appendChild(o1); input.appendChild(o2); input.appendChild(o3); input.value = val || 'Pendente'; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else if(collectionName === 'financeiro'){ if(field === 'valor'){ input = document.createElement('input'); input.type='number'; input.step='0.01'; input.value = val.replace(/[^\d\.\-]/g,'') || 0; } else if(field === 'tipo'){ input = document.createElement('select'); const o1 = document.createElement('option'); o1.value='entrada'; o1.text='Receita'; const o2 = document.createElement('option'); o2.value='saida'; o2.text='Despesa'; input.appendChild(o1); input.appendChild(o2); const raw = String(val || '').toLowerCase().trim(); if(raw === 'receita' || raw === 'entrada') input.value = 'entrada'; else if(raw === 'despesa' || raw === 'saída' || raw === 'saida') input.value = 'saida'; else input.value = 'entrada'; } else if(field === 'dataLanc' || field === 'vencimento'){ input = document.createElement('input'); input.type='date'; const parts = val.split('/'); if(parts.length===3) input.value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else if(collectionName === 'servicos'){ if(field === 'cliente'){ input = document.createElement('select'); const placeholder = document.createElement('option'); placeholder.value=''; placeholder.text='-- Selecionar cliente --'; placeholder.disabled=true; input.appendChild(placeholder); clientes.forEach((c) => { const o = document.createElement('option'); o.value = c.id; o.text = `${c.nome} (${c.doc || ''})`; input.appendChild(o); }); const match = clientes.find(c=>c.nome === val); input.value = match ? match.id : ''; } else if(field === 'valor'){ input = document.createElement('input'); input.type='number'; input.step='0.01'; input.value = val.replace(/[^\d\.\-]/g,'') || 0; } else if(field === 'parcelas'){ input = document.createElement('input'); input.type='number'; input.value = val || 1; } else if(field === 'vencimentos'){ input = document.createElement('input'); input.type='text'; input.value = val; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else { input = document.createElement('input'); input.type='text'; input.value = val; }
-      td.innerHTML = ''; td.appendChild(input); if(input.tagName.toLowerCase() === 'select'){ setTimeout(()=> { if(window.M) M.FormSelect.init(input); }, 0); }
+      td.innerHTML = ''; if(input.tagName.toLowerCase() === 'select'){ input.classList.add('browser-default'); } td.appendChild(input);
     });
     const actionsTd = tr.querySelector('td:last-child');
     if(actionsTd){
