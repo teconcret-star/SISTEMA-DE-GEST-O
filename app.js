@@ -495,7 +495,8 @@ document.addEventListener('DOMContentLoaded', function () {
       const btnEdit = document.createElement('button'); btnEdit.className='btn-small orange small-action'; btnEdit.innerHTML='<span class="material-icons">edit</span>'; btnEdit.onclick=()=> window.editarPedido(p.id);
       const btnInline = document.createElement('button'); btnInline.className='btn-small blue small-action'; btnInline.innerHTML='<span class="material-icons">edit_attributes</span>'; btnInline.onclick=(e)=> window.editRow('pedidos', p.id, e.currentTarget);
       const btnDel = document.createElement('button'); btnDel.className='btn-small red'; btnDel.innerHTML='<span class="material-icons">delete</span>'; btnDel.onclick=()=> window.excluirPedido(p.id);
-      tdActions.appendChild(btnEdit); tdActions.appendChild(btnInline); tdActions.appendChild(btnDel); tr.appendChild(tdActions); tbody.appendChild(tr);
+      const btnWA = document.createElement('button'); btnWA.className='btn-small green small-action'; btnWA.innerHTML='<span class="material-icons">whatsapp</span>'; btnWA.title='Notificar via WhatsApp'; btnWA.onclick=()=>{ const msg = `Olá ${c.nome || 'cliente'}! Passamos para lembrá-lo(a) que o pagamento do pedido *${p.produto || ''}* no valor de *R$ ${Number(p.custo||0).toFixed(2)}* vence em *${p.vencimento || 'data não definida'}*. Qualquer dúvida, estamos à disposição. Obrigado!`; enviarWhatsAppVencimento(c.tel, msg); };
+      tdActions.appendChild(btnEdit); tdActions.appendChild(btnInline); tdActions.appendChild(btnWA); tdActions.appendChild(btnDel); tr.appendChild(tdActions); tbody.appendChild(tr);
     });
     calcularSaldo(); checkVencimentosPedidos7dias(); reapplyAllFilters();
     scheduleDashboardUpdate();
@@ -585,7 +586,8 @@ document.addEventListener('DOMContentLoaded', function () {
       const tdActions = document.createElement('td');
       const btnInline = document.createElement('button'); btnInline.className='btn-small blue small-action'; btnInline.innerHTML='<span class="material-icons">edit_attributes</span>'; btnInline.onclick=(e)=> window.editRow('servicos', s.id, e.currentTarget);
       const btnDel = document.createElement('button'); btnDel.className='btn-small red'; btnDel.innerHTML='<span class="material-icons">delete</span>'; btnDel.onclick=()=> window.excluirServico(s.id);
-      tdActions.appendChild(btnInline); tdActions.appendChild(btnDel); tr.appendChild(tdActions); tbody.appendChild(tr);
+      const btnWA = document.createElement('button'); btnWA.className='btn-small green small-action'; btnWA.innerHTML='<span class="material-icons">whatsapp</span>'; btnWA.title='Notificar via WhatsApp'; btnWA.onclick=()=>{ const vencTxt = (s.vencimentos || []).join(', ') || 'data não definida'; const msg = `Olá ${cliente.nome || 'cliente'}! Passamos para lembrá-lo(a) que o pagamento do serviço *${s.desc || ''}* no valor de *R$ ${Number(s.valor||0).toFixed(2)}* (${s.parcelas||1}x) possui vencimento em *${vencTxt}*. Qualquer dúvida, estamos à disposição. Obrigado!`; enviarWhatsAppVencimento(cliente.tel, msg); };
+      tdActions.appendChild(btnInline); tdActions.appendChild(btnWA); tdActions.appendChild(btnDel); tr.appendChild(tdActions); tbody.appendChild(tr);
     });
     checkVencimentosServicos7dias(); reapplyAllFilters();
   }
@@ -606,6 +608,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const hoje = new Date(); const proximos = [];
     servicos.forEach((s)=>{ (s.vencimentos || []).forEach(v=>{ const d = parseDDMMYYYYToDate(v); if(!d) return; const diff = Math.ceil((d - new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()))/1000/60/60/24); if(diff <= 7 && diff >= 0){ const cliente = clientes.find(x=>x.id===s.clienteId) || {}; proximos.push(`${s.desc} - ${cliente.nome || 'Cliente'} (${v})`); } }); });
     if(proximos.length) M.toast({html: `Atenção: ${proximos.length} vencimento(s) de serviços em até 7 dias.`, displayLength:8000, classes:'red'});
+  }
+
+  // ====== WHATSAPP NOTIFICAÇÃO DE VENCIMENTO ======
+  function enviarWhatsAppVencimento(telefone, mensagem) {
+    const digits = onlyDigits(telefone || '');
+    if (!digits) { M.toast({html:'Cliente sem telefone cadastrado.', classes:'red'}); return; }
+    const phone = digits.startsWith('55') ? digits : '55' + digits;
+    const url = 'https://api.whatsapp.com/send?phone=' + phone + '&text=' + encodeURIComponent(mensagem);
+    window.open(url, '_blank');
   }
 
   // EXCLUSÕES GLOBAIS
