@@ -55,6 +55,7 @@
   <nav id="sideMenu" aria-label="Menu lateral">
     <ul>
       <li id="menuUsuarios" style="display:none" data-target="sectionUsuarios"><span class="item-icon"><span class="material-icons">manage_accounts</span></span><span>Gestão de Usuários</span></li>
+      <li data-target="sectionDashboard"><span class="item-icon"><span class="material-icons">dashboard</span></span><span>Dashboard</span></li>
       <li data-target="formCliente"><span class="item-icon"><span class="material-icons">person</span></span><span>Cadastro de Cliente</span></li>
       <li data-target="formCadastroMP"><span class="item-icon"><span class="material-icons">category</span></span><span>Cadastro de Produto (MP)</span></li>
       <li data-target="formPedidoSection"><span class="item-icon"><span class="material-icons">post_add</span></span><span>Novo Pedido</span></li>
@@ -65,6 +66,120 @@
   </nav>
 
   <div class="container">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div id="sectionDashboard">
+      <div class="section-h">Dashboard — Análise Gráfica</div>
+
+      <!-- Filtros -->
+      <div class="card-panel z-depth-1">
+        <div class="row" style="margin-bottom:0;">
+          <div class="input-field col s12 m3">
+            <input id="dashDataInicio" type="date">
+            <label for="dashDataInicio" class="active">Data Início</label>
+          </div>
+          <div class="input-field col s12 m3">
+            <input id="dashDataFim" type="date">
+            <label for="dashDataFim" class="active">Data Fim</label>
+          </div>
+          <div class="input-field col s6 m2">
+            <select id="dashProduto">
+              <option value="">Todos</option>
+              <option value="CURE FILM H">CURE FILM H</option>
+              <option value="CURE FILM HC">CURE FILM HC</option>
+              <option value="HARDSURF H">HARDSURF H</option>
+              <option value="HARDSURF HC">HARDSURF HC</option>
+            </select>
+            <label for="dashProduto">Produto</label>
+          </div>
+          <div class="input-field col s6 m2">
+            <select id="dashStatus">
+              <option value="">Todos</option>
+              <option value="Pendente">Pendente</option>
+              <option value="Pago">Pago</option>
+              <option value="Cancelado">Cancelado</option>
+            </select>
+            <label for="dashStatus">Status</label>
+          </div>
+          <div class="col s12 m2" style="padding-top:8px;display:flex;gap:6px;">
+            <button class="btn blue" id="btnAplicarDash" style="flex:1;"><span class="material-icons left">filter_list</span>Filtrar</button>
+            <button class="btn grey" id="btnLimparDash" style="flex:1;"><span class="material-icons left">clear</span>Limpar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="dash-kpi-row">
+        <div class="dash-kpi-card dash-kpi-blue">
+          <span class="material-icons dash-kpi-icon">people</span>
+          <div class="dash-kpi-value" id="kpiClientes">0</div>
+          <div class="dash-kpi-label">Clientes</div>
+        </div>
+        <div class="dash-kpi-card dash-kpi-blue">
+          <span class="material-icons dash-kpi-icon">assignment</span>
+          <div class="dash-kpi-value" id="kpiPedidos">0</div>
+          <div class="dash-kpi-label">Pedidos</div>
+        </div>
+        <div class="dash-kpi-card dash-kpi-blue">
+          <span class="material-icons dash-kpi-icon">scale</span>
+          <div class="dash-kpi-value" id="kpiVolume">0 kg</div>
+          <div class="dash-kpi-label">Volume Vendido</div>
+        </div>
+        <div class="dash-kpi-card dash-kpi-green">
+          <span class="material-icons dash-kpi-icon">attach_money</span>
+          <div class="dash-kpi-value" id="kpiReceita">R$ 0,00</div>
+          <div class="dash-kpi-label">Receita Pedidos</div>
+        </div>
+        <div class="dash-kpi-card dash-kpi-red">
+          <span class="material-icons dash-kpi-icon">money_off</span>
+          <div class="dash-kpi-value" id="kpiDespesa">R$ 0,00</div>
+          <div class="dash-kpi-label">Despesas</div>
+        </div>
+        <div class="dash-kpi-card" id="kpiSaldoCard">
+          <span class="material-icons dash-kpi-icon">account_balance</span>
+          <div class="dash-kpi-value" id="kpiSaldo">R$ 0,00</div>
+          <div class="dash-kpi-label">Saldo Financeiro</div>
+        </div>
+      </div>
+
+      <!-- Charts Row 1 -->
+      <div class="dash-charts-row">
+        <div class="dash-chart-card">
+          <div class="dash-chart-title">Pedidos por Mês</div>
+          <canvas id="chartPedidosMes"></canvas>
+        </div>
+        <div class="dash-chart-card">
+          <div class="dash-chart-title">Volume por Produto (kg)</div>
+          <canvas id="chartProdutos"></canvas>
+        </div>
+      </div>
+
+      <!-- Charts Row 2 -->
+      <div class="dash-charts-row">
+        <div class="dash-chart-card">
+          <div class="dash-chart-title">Entradas × Saídas por Mês</div>
+          <canvas id="chartFinanceiro"></canvas>
+        </div>
+        <div class="dash-chart-card">
+          <div class="dash-chart-title">Top 5 Clientes por Volume (kg)</div>
+          <canvas id="chartTopClientes"></canvas>
+        </div>
+      </div>
+
+      <!-- Charts Row 3 -->
+      <div class="dash-charts-row">
+        <div class="dash-chart-card">
+          <div class="dash-chart-title">Receita por Produto (R$)</div>
+          <canvas id="chartReceitaProduto"></canvas>
+        </div>
+        <div class="dash-chart-card">
+          <div class="dash-chart-title">Status dos Pedidos</div>
+          <canvas id="chartStatusPedidos"></canvas>
+        </div>
+      </div>
+    </div>
+    <!-- ===== FIM DASHBOARD ===== -->
+
     <div class="section-h">Cadastro de Cliente</div>
     <form id="formCliente" class="card-panel z-depth-1">
       <input type="hidden" id="clienteEditId" value="">
@@ -259,6 +374,7 @@
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="app.js"></script>

@@ -82,6 +82,9 @@ document.addEventListener('DOMContentLoaded', function () {
   M.FormSelect.init(document.querySelectorAll('select'));
   M.Tooltip.init(document.querySelectorAll('.tooltipped'));
 
+  const _dashCharts = {};
+  let _dashTimer = null;
+
   const clienteDocTipoEl = document.getElementById('clienteDocTipo');
   const clienteDocEl = document.getElementById('clienteDoc');
   const clienteTelEl = document.getElementById('clienteTel');
@@ -465,6 +468,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     if(window.M) M.FormSelect.init(document.querySelectorAll('#pedidoCliente, #servicoCliente'));
     reapplyAllFilters();
+    scheduleDashboardUpdate();
   }
 
   function atualizarMPCadastroUI(){
@@ -494,6 +498,7 @@ document.addEventListener('DOMContentLoaded', function () {
       tdActions.appendChild(btnEdit); tdActions.appendChild(btnInline); tdActions.appendChild(btnDel); tr.appendChild(tdActions); tbody.appendChild(tr);
     });
     calcularSaldo(); checkVencimentosPedidos7dias(); reapplyAllFilters();
+    scheduleDashboardUpdate();
   }
 
   // ====== LOGICA DE RESUMO DO MÊS NO CALENDÁRIO ======
@@ -568,6 +573,7 @@ document.addEventListener('DOMContentLoaded', function () {
     
     setTimeout(() => { renderFinanceiroCalendar(); }, 150);
     reapplyAllFilters();
+    scheduleDashboardUpdate();
   }
 
   function atualizarServicosUI(){
@@ -658,6 +664,187 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch(err){ showStatus('Erro ao salvar edição.', true); }
     tr.classList.remove('editing-row');
   }
+
+  // ====== DASHBOARD ======
+  function destroyDashCharts(){
+    Object.keys(_dashCharts).forEach(k => {
+      if(_dashCharts[k]){ _dashCharts[k].destroy(); _dashCharts[k] = null; }
+    });
+  }
+
+  function renderDashboard(){
+    if(!window.Chart) return;
+
+    const dataInicio = document.getElementById('dashDataInicio').value;
+    const dataFim = document.getElementById('dashDataFim').value;
+    const prodFiltro = document.getElementById('dashProduto').value;
+    const statusFiltro = document.getElementById('dashStatus').value;
+
+    const dtInicio = dataInicio ? parseDateInputAsLocal(dataInicio) : null;
+    let dtFim = null;
+    if(dataFim){ dtFim = parseDateInputAsLocal(dataFim); if(dtFim) dtFim.setHours(23,59,59,999); }
+
+    // Filter pedidos
+    const pedidosFilt = pedidos.filter(p => {
+      if(prodFiltro && p.produto !== prodFiltro) return false;
+      if(statusFiltro && p.status !== statusFiltro) return false;
+      if(dtInicio || dtFim){
+        const d = parseDDMMYYYYToDate(p.dataPedido);
+        if(!d) return false;
+        if(dtInicio && d < dtInicio) return false;
+        if(dtFim && d > dtFim) return false;
+      }
+      return true;
+    });
+
+    // Filter financeiro
+    const financFilt = financeiro.filter(m => {
+      if(!(dtInicio || dtFim)) return true;
+      let d = m.dataLanc ? parseDDMMYYYYToDate(m.dataLanc) : null;
+      if(!d && m.vencimento) d = parseDDMMYYYYToDate(m.vencimento);
+      if(!d) return true;
+      if(dtInicio && d < dtInicio) return false;
+      if(dtFim && d > dtFim) return false;
+      return true;
+    });
+
+    // KPIs
+    const totalEntradas = financFilt.filter(m => String(m.tipo).toLowerCase() === 'entrada').reduce((s,m) => s + (Number(m.valor)||0), 0);
+    const totalSaidas   = financFilt.filter(m => String(m.tipo).toLowerCase() === 'saida').reduce((s,m) => s + (Number(m.valor)||0), 0);
+    const saldoFin = totalEntradas - totalSaidas;
+
+    document.getElementById('kpiClientes').textContent = clientes.length;
+    document.getElementById('kpiPedidos').textContent = pedidosFilt.length;
+    document.getElementById('kpiVolume').textContent = pedidosFilt.reduce((s,p) => s + (Number(p.kg)||0), 0).toFixed(1).replace('.',',') + ' kg';
+    document.getElementById('kpiReceita').textContent = 'R$ ' + pedidosFilt.reduce((s,p) => s + (Number(p.custo)||0), 0).toFixed(2).replace('.',',');
+    document.getElementById('kpiDespesa').textContent = 'R$ ' + totalSaidas.toFixed(2).replace('.',',');
+    document.getElementById('kpiSaldo').textContent = (saldoFin < 0 ? '-' : '') + 'R$ ' + Math.abs(saldoFin).toFixed(2).replace('.',',');
+    const kpiSaldoCard = document.getElementById('kpiSaldoCard');
+    kpiSaldoCard.classList.remove('dash-kpi-green','dash-kpi-red');
+    kpiSaldoCard.classList.add(saldoFin >= 0 ? 'dash-kpi-green' : 'dash-kpi-red');
+
+    destroyDashCharts();
+
+    const chartOpts = { responsive: true, maintainAspectRatio: true };
+
+    // Chart 1: Pedidos por Mês (bar)
+    const pedMes = {};
+    pedidosFilt.forEach(p => {
+      const d = parseDDMMYYYYToDate(p.dataPedido); if(!d) return;
+      const k = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+      pedMes[k] = (pedMes[k]||0) + 1;
+    });
+    const pedMesKeys = Object.keys(pedMes).sort();
+    _dashCharts.pedidosMes = new Chart(document.getElementById('chartPedidosMes'), {
+      type: 'bar',
+      data: {
+        labels: pedMesKeys.map(k => { const [y,m] = k.split('-'); return m+'/'+y; }),
+        datasets: [{ label: 'Pedidos', data: pedMesKeys.map(k => pedMes[k]), backgroundColor: '#318fce', borderColor: '#2779b0', borderWidth: 1 }]
+      },
+      options: { ...chartOpts, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+
+    // Chart 2: Volume por Produto (doughnut)
+    const volProd = {};
+    pedidosFilt.forEach(p => { const k = p.produto || 'Outros'; volProd[k] = (volProd[k]||0) + (Number(p.kg)||0); });
+    const prodKeys = Object.keys(volProd);
+    _dashCharts.produtos = new Chart(document.getElementById('chartProdutos'), {
+      type: 'doughnut',
+      data: {
+        labels: prodKeys,
+        datasets: [{ data: prodKeys.map(k => volProd[k]), backgroundColor: ['#318fce','#47a647','#e6890f','#d23b3b','#9c27b0','#00838f'] }]
+      },
+      options: { ...chartOpts }
+    });
+
+    // Chart 3: Entradas × Saídas por Mês (bar)
+    const entMes = {}; const saiMes = {};
+    financFilt.forEach(m => {
+      let d = m.dataLanc ? parseDDMMYYYYToDate(m.dataLanc) : null;
+      if(!d && m.vencimento) d = parseDDMMYYYYToDate(m.vencimento);
+      if(!d) return;
+      const k = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+      const v = Number(m.valor)||0;
+      if(String(m.tipo).toLowerCase()==='entrada') entMes[k] = (entMes[k]||0)+v;
+      else saiMes[k] = (saiMes[k]||0)+v;
+    });
+    const finMesKeys = [...new Set([...Object.keys(entMes), ...Object.keys(saiMes)])].sort();
+    _dashCharts.financeiro = new Chart(document.getElementById('chartFinanceiro'), {
+      type: 'bar',
+      data: {
+        labels: finMesKeys.map(k => { const [y,m] = k.split('-'); return m+'/'+y; }),
+        datasets: [
+          { label: 'Entradas', data: finMesKeys.map(k => entMes[k]||0), backgroundColor: '#47a647', borderColor: '#3b8e3b', borderWidth: 1 },
+          { label: 'Saídas',   data: finMesKeys.map(k => saiMes[k]||0), backgroundColor: '#d23b3b', borderColor: '#b52f2f', borderWidth: 1 }
+        ]
+      },
+      options: { ...chartOpts, scales: { y: { beginAtZero: true } } }
+    });
+
+    // Chart 4: Top 5 Clientes por Volume (horizontal bar)
+    const cliVol = {};
+    pedidosFilt.forEach(p => {
+      const c = clientes.find(x => x.id === p.clienteId) || {};
+      const n = c.nome || 'Desconhecido';
+      cliVol[n] = (cliVol[n]||0) + (Number(p.kg)||0);
+    });
+    const top5 = Object.entries(cliVol).sort((a,b) => b[1]-a[1]).slice(0,5);
+    _dashCharts.topClientes = new Chart(document.getElementById('chartTopClientes'), {
+      type: 'bar',
+      data: {
+        labels: top5.map(x => x[0]),
+        datasets: [{ label: 'Volume (kg)', data: top5.map(x => x[1]), backgroundColor: '#9c27b0', borderColor: '#7b1fa2', borderWidth: 1 }]
+      },
+      options: { ...chartOpts, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+    });
+
+    // Chart 5: Receita por Produto (bar)
+    const recProd = {};
+    pedidosFilt.forEach(p => { const k = p.produto || 'Outros'; recProd[k] = (recProd[k]||0) + (Number(p.custo)||0); });
+    const recProdKeys = Object.keys(recProd);
+    _dashCharts.receitaProduto = new Chart(document.getElementById('chartReceitaProduto'), {
+      type: 'bar',
+      data: {
+        labels: recProdKeys,
+        datasets: [{ label: 'R$', data: recProdKeys.map(k => recProd[k]), backgroundColor: ['#318fce','#47a647','#e6890f','#d23b3b'], borderWidth: 1 }]
+      },
+      options: { ...chartOpts, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    // Chart 6: Status dos Pedidos (pie)
+    const statCount = {};
+    pedidosFilt.forEach(p => { const s = p.status || 'Pendente'; statCount[s] = (statCount[s]||0)+1; });
+    const statKeys = Object.keys(statCount);
+    _dashCharts.statusPedidos = new Chart(document.getElementById('chartStatusPedidos'), {
+      type: 'pie',
+      data: {
+        labels: statKeys,
+        datasets: [{ data: statKeys.map(k => statCount[k]), backgroundColor: ['#e6890f','#47a647','#d23b3b'] }]
+      },
+      options: { ...chartOpts }
+    });
+  }
+
+  function scheduleDashboardUpdate(){
+    if(_dashTimer) clearTimeout(_dashTimer);
+    _dashTimer = setTimeout(() => { renderDashboard(); }, 400);
+  }
+
+  document.getElementById('btnAplicarDash').addEventListener('click', () => renderDashboard());
+  document.getElementById('btnLimparDash').addEventListener('click', () => {
+    document.getElementById('dashDataInicio').value = '';
+    document.getElementById('dashDataFim').value = '';
+    const selProd = document.getElementById('dashProduto');
+    const selStat = document.getElementById('dashStatus');
+    selProd.selectedIndex = 0; M.FormSelect.init(selProd);
+    selStat.selectedIndex = 0; M.FormSelect.init(selStat);
+    M.updateTextFields();
+    renderDashboard();
+  });
+
+  // Re-render dashboard on menu click
+  const dashMenuLi = document.querySelector('#sideMenu li[data-target="sectionDashboard"]');
+  if(dashMenuLi) dashMenuLi.addEventListener('click', () => renderDashboard());
 
   // ====== START ======
   let _unsubs = [];
