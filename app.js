@@ -689,7 +689,9 @@ document.addEventListener('DOMContentLoaded', function () {
       if(prodFiltro && p.produto !== prodFiltro) return false;
       if(statusFiltro && p.status !== statusFiltro) return false;
       if(dtInicio || dtFim){
-        const d = parseDDMMYYYYToDate(p.dataPedido);
+        let d = null;
+        if(p.vencimento && typeof p.vencimento === 'string' && p.vencimento.includes('/')) d = parseDDMMYYYYToDate(p.vencimento);
+        if(!d) d = parseDDMMYYYYToDate(p.dataPedido);
         if(!d) return false;
         if(dtInicio && d < dtInicio) return false;
         if(dtFim && d > dtFim) return false;
@@ -733,7 +735,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // Chart 1: Pedidos por Mês (bar)
     const pedMes = {};
     pedidosFilt.forEach(p => {
-      const d = parseDDMMYYYYToDate(p.dataPedido); if(!d) return;
+      let d = null;
+      if(p.vencimento && typeof p.vencimento === 'string' && p.vencimento.includes('/')) d = parseDDMMYYYYToDate(p.vencimento);
+      if(!d) d = parseDDMMYYYYToDate(p.dataPedido);
+      if(!d) return;
       const k = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
       pedMes[k] = (pedMes[k]||0) + 1;
     });
