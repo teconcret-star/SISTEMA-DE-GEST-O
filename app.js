@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('finValor').value = mov.valor || '';
     if(document.getElementById('finObs')) document.getElementById('finObs').value = mov.obs || '';
     if(document.getElementById('finDataLanc') && mov.dataLanc){ const parts = mov.dataLanc.split('/'); if(parts.length===3) document.getElementById('finDataLanc').value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`; }
-    const tipoEl = document.getElementById('finTipo'); tipoEl.value = (String(mov.tipo).toLowerCase() === 'saida') ? 'saida' : 'entrada'; M.FormSelect.init(tipoEl);
+    const tipoEl = document.getElementById('finTipo'); const tipoInst = M.FormSelect.getInstance(tipoEl); if(tipoInst) tipoInst.destroy(); tipoEl.value = (String(mov.tipo).toLowerCase() === 'saida') ? 'saida' : 'entrada'; M.FormSelect.init(tipoEl);
     document.getElementById('btnFinanceiro').textContent = 'Salvar Alterações';
     document.getElementById('btnCancelarFinanceiro').style.display = 'inline-block';
     M.updateTextFields();
@@ -459,8 +459,8 @@ document.addEventListener('DOMContentLoaded', function () {
         initialView: 'dayGridMonth', locale: 'pt-br', height: 'auto',
         headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth,listMonth' },
         events,
-        eventClick: function(info){ const ex = info.event.extendedProps || {}; M.toast({html:`<b>${escapeHTML(info.event.title)}</b><br>Data Lanç.: ${escapeHTML(ex.dataLanc || '-')}<br>Vencimento: ${escapeHTML(ex.vencimento || '-')}<br>Obs.: ${escapeHTML(ex.obs || '-')}`, displayLength:4000}); },
-        eventDidMount: function(info){ info.el.title = 'Clique 2x para editar'; info.el.addEventListener('dblclick', function(){ abrirFinanceiroParaEdicao(info.event.id); }); },
+        eventClick: function(info){ abrirFinanceiroParaEdicao(info.event.id); },
+        eventDidMount: function(info){ info.el.title = 'Clique para editar'; info.el.style.cursor = 'pointer'; },
         datesSet: function(info) {
           // O getMonth() no currentStart retorna exatamente o mês que está sendo visto
           const d = info.view.currentStart;
