@@ -657,7 +657,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const hoje = new Date();
     const hoje0 = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
     const limitDate = new Date(hoje0);
-    limitDate.setDate(limitDate.getDate() - 14);
+    limitDate.setDate(limitDate.getDate() - 7);
 
     const qualificados = [];
     clientes.forEach(c => {
@@ -702,7 +702,7 @@ document.addEventListener('DOMContentLoaded', function () {
     panel.style.display = '';
     panel.innerHTML = `<div style="background:linear-gradient(#fff3e0,#ffe0b2);border:2px solid #e65100;padding:12px 16px;margin-bottom:10px;border-radius:4px;">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <strong style="color:#bf360c;font-size:15px;">🛒 ${qualificados.length} cliente(s) sem compra há mais de 14 dias</strong>
+        <strong style="color:#bf360c;font-size:15px;">🛒 ${qualificados.length} cliente(s) sem compra há mais de 7 dias</strong>
         <button id="btnDispararTodos" class="btn-small orange" style="margin-left:auto;"><span class="material-icons left" style="font-size:16px;">send</span>Disparar para Todos</button>
       </div>
       <ul id="listaSemCompra" style="margin:8px 0 0 0;padding-left:20px;">${itensHtml}</ul>
@@ -710,18 +710,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('btnDispararTodos').onclick = function(){
       const links = panel.querySelectorAll('#listaSemCompra li[data-url]');
-      let delay = 0;
-      let enviados = 0;
+      const urls = [];
       links.forEach(li => {
         const url = li.getAttribute('data-url');
-        if(url){
-          setTimeout(() => { window.open(url, '_blank'); }, delay);
-          delay += 1200;
-          enviados++;
-        }
+        if(url) urls.push(url);
       });
-      if(enviados === 0) M.toast({html:'Nenhum cliente com telefone cadastrado.', classes:'red'});
-      else M.toast({html:`Abrindo WhatsApp para ${enviados} cliente(s)... (verifique bloqueio de pop-ups)`, displayLength:6000});
+      if(urls.length === 0){ M.toast({html:'Nenhum cliente com telefone cadastrado.', classes:'red'}); return; }
+      const confirmar = confirm(`Deseja enviar mensagem via WhatsApp para ${urls.length} cliente(s) simultaneamente?`);
+      if(!confirmar) return;
+      urls.forEach(url => { window.open(url, '_blank'); });
+      M.toast({html:`WhatsApp aberto para ${urls.length} cliente(s). Verifique bloqueio de pop-ups.`, displayLength:6000});
     };
   }
 
