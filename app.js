@@ -495,10 +495,10 @@ document.addEventListener('DOMContentLoaded', function () {
       const btnEdit = document.createElement('button'); btnEdit.className='btn-small orange small-action'; btnEdit.innerHTML='<span class="material-icons">edit</span>'; btnEdit.onclick=()=> window.editarPedido(p.id);
       const btnInline = document.createElement('button'); btnInline.className='btn-small blue small-action'; btnInline.innerHTML='<span class="material-icons">edit_attributes</span>'; btnInline.onclick=(e)=> window.editRow('pedidos', p.id, e.currentTarget);
       const btnDel = document.createElement('button'); btnDel.className='btn-small red'; btnDel.innerHTML='<span class="material-icons">delete</span>'; btnDel.onclick=()=> window.excluirPedido(p.id);
-      const btnWA = document.createElement('button'); btnWA.className='btn-small green small-action'; btnWA.innerHTML='<span class="material-icons">whatsapp</span>'; btnWA.title='Notificar via WhatsApp'; btnWA.onclick=()=>{ const msg = `Olá ${c.nome || 'cliente'}! Passamos para lembrá-lo(a) que o pagamento do pedido *${p.produto || ''}* no valor de *R$ ${Number(p.custo||0).toFixed(2)}* vence em *${p.vencimento || 'data não definida'}*. Qualquer dúvida, estamos à disposição. Obrigado!`; enviarWhatsAppVencimento(c.tel, msg); };
+      const btnWA = document.createElement('button'); btnWA.className='btn-small green small-action'; btnWA.innerHTML='<span class="material-icons">whatsapp</span>'; btnWA.title='Notificar via WhatsApp'; btnWA.onclick=()=>{ const msg = `Olá ${c.nome || 'cliente'}! Passamos para lembrá-lo(a) que o pagamento do pedido *${p.produto || ''}* no valor de *R$ ${Number(p.custo||0).toFixed(2)}* vence em *${p.vencimento || 'data não definida'}*. Qualquer dúvida, estamos à disposição.\n\n— HL Souza`; enviarWhatsAppVencimento(c.tel, msg); };
       tdActions.appendChild(btnEdit); tdActions.appendChild(btnInline); tdActions.appendChild(btnWA); tdActions.appendChild(btnDel); tr.appendChild(tdActions); tbody.appendChild(tr);
     });
-    calcularSaldo(); checkVencimentosPedidos7dias(); reapplyAllFilters();
+    calcularSaldo(); checkVencimentosPedidos7dias(); checkVencimentosPedidos2dias(); reapplyAllFilters();
     scheduleDashboardUpdate();
   }
 
@@ -586,7 +586,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const tdActions = document.createElement('td');
       const btnInline = document.createElement('button'); btnInline.className='btn-small blue small-action'; btnInline.innerHTML='<span class="material-icons">edit_attributes</span>'; btnInline.onclick=(e)=> window.editRow('servicos', s.id, e.currentTarget);
       const btnDel = document.createElement('button'); btnDel.className='btn-small red'; btnDel.innerHTML='<span class="material-icons">delete</span>'; btnDel.onclick=()=> window.excluirServico(s.id);
-      const btnWA = document.createElement('button'); btnWA.className='btn-small green small-action'; btnWA.innerHTML='<span class="material-icons">whatsapp</span>'; btnWA.title='Notificar via WhatsApp'; btnWA.onclick=()=>{ const vencTxt = (s.vencimentos || []).join(', ') || 'data não definida'; const msg = `Olá ${cliente.nome || 'cliente'}! Passamos para lembrá-lo(a) que o pagamento do serviço *${s.desc || ''}* no valor de *R$ ${Number(s.valor||0).toFixed(2)}* (${s.parcelas||1}x) possui vencimento em *${vencTxt}*. Qualquer dúvida, estamos à disposição. Obrigado!`; enviarWhatsAppVencimento(cliente.tel, msg); };
+      const btnWA = document.createElement('button'); btnWA.className='btn-small green small-action'; btnWA.innerHTML='<span class="material-icons">whatsapp</span>'; btnWA.title='Notificar via WhatsApp'; btnWA.onclick=()=>{ const vencTxt = (s.vencimentos || []).join(', ') || 'data não definida'; const msg = `Olá ${cliente.nome || 'cliente'}! Passamos para lembrá-lo(a) que o pagamento do serviço *${s.desc || ''}* no valor de *R$ ${Number(s.valor||0).toFixed(2)}* (${s.parcelas||1}x) possui vencimento em *${vencTxt}*. Qualquer dúvida, estamos à disposição.\n\n— HL Souza`; enviarWhatsAppVencimento(cliente.tel, msg); };
       tdActions.appendChild(btnInline); tdActions.appendChild(btnWA); tdActions.appendChild(btnDel); tr.appendChild(tdActions); tbody.appendChild(tr);
     });
     checkVencimentosServicos7dias(); reapplyAllFilters();
@@ -610,6 +610,121 @@ document.addEventListener('DOMContentLoaded', function () {
     if(proximos.length) M.toast({html: `Atenção: ${proximos.length} vencimento(s) de serviços em até 7 dias.`, displayLength:8000, classes:'red'});
   }
 
+  // ====== LEMBRETE AUTOMÁTICO 2 DIAS ANTES DO VENCIMENTO ======
+  function checkVencimentosPedidos2dias(){
+    const hoje = new Date();
+    const hoje0 = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    const matches = [];
+    pedidos.forEach(p => {
+      if(!p.vencimento || String(p.vencimento).toLowerCase().includes('à vista')) return;
+      const status = String(p.status || '').toLowerCase();
+      if(status === 'cancelado' || status === 'pago') return;
+      const d = parseDDMMYYYYToDate(p.vencimento);
+      if(!d) return;
+      const diff = Math.ceil((d - hoje0) / 1000 / 60 / 60 / 24);
+      if(diff === 2){
+        const cliente = clientes.find(x => x.id === p.clienteId) || {};
+        matches.push({ pedido: p, cliente });
+      }
+    });
+
+    const banner = document.getElementById('vencimento2diasBanner');
+    if(!banner) return;
+
+    if(matches.length === 0){ banner.style.display = 'none'; return; }
+
+    const assinatura = '— HL Souza';
+    const itensHtml = matches.map(({ pedido: p, cliente: c }) => {
+      const tel = onlyDigits(c.tel || '');
+      const phone = tel ? (tel.startsWith('55') ? tel : '55' + tel) : '';
+      const msg = `Olá ${c.nome || 'cliente'}! Passamos para lembrá-lo(a) que o pagamento do pedido *${p.produto || ''}* no valor de *R$ ${Number(p.custo||0).toFixed(2)}* vence em *${p.vencimento}* (em 2 dias). Qualquer dúvida, estamos à disposição.\n\n${assinatura}`;
+      const url = tel ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}` : '';
+      return `<li style="margin:4px 0;">
+        <strong>${escapeHTML(c.nome || 'Cliente')}</strong> — ${escapeHTML(p.produto || '')} — R$ ${Number(p.custo||0).toFixed(2)} — Venc: <strong>${escapeHTML(p.vencimento)}</strong>
+        ${tel ? `<a href="${escapeHTML(url)}" target="_blank" rel="noopener" class="btn-small green" style="margin-left:8px;vertical-align:middle;"><span class="material-icons" style="font-size:16px;vertical-align:middle;">whatsapp</span> Enviar</a>` : '<span style="color:#b71c1c;font-size:12px;margin-left:8px;">(sem telefone)</span>'}
+      </li>`;
+    }).join('');
+
+    banner.style.display = '';
+    banner.innerHTML = `<div style="background:linear-gradient(#fff3e0,#ffe0b2);border:2px solid #e65100;padding:12px 16px;margin-bottom:10px;border-radius:4px;">
+      <strong style="color:#bf360c;font-size:15px;">🔔 ${matches.length} pedido(s) vencem em 2 dias — Envie os lembretes!</strong>
+      <ul style="margin:8px 0 0 0;padding-left:20px;">${itensHtml}</ul>
+    </div>`;
+  }
+
+  // ====== CLIENTES SEM COMPRA HÁ 2 SEMANAS ======
+  function dispararLembretesSemCompra(){
+    const hoje = new Date();
+    const hoje0 = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    const limitDate = new Date(hoje0);
+    limitDate.setDate(limitDate.getDate() - 14);
+
+    const qualificados = [];
+    clientes.forEach(c => {
+      const clientePedidos = pedidos.filter(p => p.clienteId === c.id && String(p.status || '').toLowerCase() !== 'cancelado');
+      if(clientePedidos.length === 0){
+        qualificados.push({ cliente: c, lastPurchase: null, diasSemCompra: null });
+        return;
+      }
+      let lastDate = null;
+      clientePedidos.forEach(p => {
+        const d = parseDDMMYYYYToDate(p.dataPedido);
+        if(d && (!lastDate || d > lastDate)) lastDate = d;
+      });
+      if(!lastDate || lastDate <= limitDate){
+        const dias = lastDate ? Math.ceil((hoje0 - lastDate) / 1000 / 60 / 60 / 24) : null;
+        qualificados.push({ cliente: c, lastPurchase: lastDate, diasSemCompra: dias });
+      }
+    });
+
+    const panel = document.getElementById('clientesSemCompraBanner');
+    if(!panel) return;
+
+    if(qualificados.length === 0){
+      panel.style.display = '';
+      panel.innerHTML = `<div style="background:linear-gradient(#e8f5e9,#c8e6c9);border:1px solid #81c784;padding:12px 16px;margin-bottom:10px;border-radius:4px;">✅ Todos os clientes realizaram compras nos últimos 14 dias.</div>`;
+      return;
+    }
+
+    const assinatura = '— HL Souza';
+    const itensHtml = qualificados.map(({ cliente: c, diasSemCompra }) => {
+      const tel = onlyDigits(c.tel || '');
+      const phone = tel ? (tel.startsWith('55') ? tel : '55' + tel) : '';
+      const diasStr = diasSemCompra ? `${diasSemCompra} dias sem compra` : 'nunca comprou';
+      const msg = `Olá ${c.nome || 'cliente'}! Sentimos a sua falta! Faz algum tempo que não recebemos o seu pedido. Que tal aproveitar e fazer uma compra hoje? Estamos à sua disposição!\n\n${assinatura}`;
+      const url = tel ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}` : '';
+      return `<li data-url="${escapeHTML(url)}" data-nome="${escapeHTML(c.nome || '')}" style="margin:4px 0;">
+        <strong>${escapeHTML(c.nome || 'Cliente')}</strong> <span style="color:#7f6000;font-size:12px;">(${escapeHTML(diasStr)})</span>
+        ${tel ? `<a href="${escapeHTML(url)}" target="_blank" rel="noopener" class="btn-small green" style="margin-left:8px;vertical-align:middle;"><span class="material-icons" style="font-size:16px;vertical-align:middle;">whatsapp</span> Enviar</a>` : '<span style="color:#b71c1c;font-size:12px;margin-left:8px;">(sem telefone)</span>'}
+      </li>`;
+    }).join('');
+
+    panel.style.display = '';
+    panel.innerHTML = `<div style="background:linear-gradient(#fff3e0,#ffe0b2);border:2px solid #e65100;padding:12px 16px;margin-bottom:10px;border-radius:4px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <strong style="color:#bf360c;font-size:15px;">🛒 ${qualificados.length} cliente(s) sem compra há mais de 14 dias</strong>
+        <button id="btnDispararTodos" class="btn-small orange" style="margin-left:auto;"><span class="material-icons left" style="font-size:16px;">send</span>Disparar para Todos</button>
+      </div>
+      <ul id="listaSemCompra" style="margin:8px 0 0 0;padding-left:20px;">${itensHtml}</ul>
+    </div>`;
+
+    document.getElementById('btnDispararTodos').onclick = function(){
+      const links = panel.querySelectorAll('#listaSemCompra li[data-url]');
+      let delay = 0;
+      let enviados = 0;
+      links.forEach(li => {
+        const url = li.getAttribute('data-url');
+        if(url){
+          setTimeout(() => { window.open(url, '_blank'); }, delay);
+          delay += 1200;
+          enviados++;
+        }
+      });
+      if(enviados === 0) M.toast({html:'Nenhum cliente com telefone cadastrado.', classes:'red'});
+      else M.toast({html:`Abrindo WhatsApp para ${enviados} cliente(s)... (verifique bloqueio de pop-ups)`, displayLength:6000});
+    };
+  }
+
   // ====== WHATSAPP NOTIFICAÇÃO DE VENCIMENTO ======
   function enviarWhatsAppVencimento(telefone, mensagem) {
     const digits = onlyDigits(telefone || '');
@@ -618,6 +733,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const url = 'https://api.whatsapp.com/send?phone=' + phone + '&text=' + encodeURIComponent(mensagem);
     window.open(url, '_blank');
   }
+
+  const btnClientesSemCompra = document.getElementById('btnClientesSemCompra');
+  if(btnClientesSemCompra) btnClientesSemCompra.addEventListener('click', function(){ dispararLembretesSemCompra(); });
 
   // EXCLUSÕES GLOBAIS
   window.excluirCliente = async function(id){ if(confirm("Excluir cliente?")) { await collClientes.doc(id).delete(); M.toast({html:'Excluído!'}); } };

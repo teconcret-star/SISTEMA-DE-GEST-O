@@ -262,6 +262,13 @@
     </form>
 
     <div class="section-h">Pedidos</div>
+    <!-- Banner: Pedidos vencendo em 2 dias (preenchido automaticamente) -->
+    <div id="vencimento2diasBanner" style="display:none;margin-bottom:4px;"></div>
+    <!-- Botão: Clientes sem compra há 2 semanas -->
+    <div style="margin-bottom:6px;">
+      <button id="btnClientesSemCompra" class="btn orange"><span class="material-icons left">shopping_cart</span>Clientes sem compra (2 sem.)</button>
+    </div>
+    <div id="clientesSemCompraBanner" style="display:none;"></div>
     <div class="scroll-table">
       <table class="highlight responsive-table" id="pedidosTable">
         <thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>Produto</th><th>Kgs</th><th>Preço/kg</th><th>Custo</th><th>Data Pedido</th><th>Vencimento</th><th>Status</th><th data-no-filter>Ações</th></tr></thead>
