@@ -23,6 +23,35 @@ const collMP = db.collection('mpList');
 const collPedidos = db.collection('pedidos');
 const collFinanceiro = db.collection('financeiro');
 const collServicos = db.collection('servicos');
+const collUsers = db.collection('users');
+
+let currentUser = null;
+let listenersStarted = false;
+
+async function hashPassword(password) {
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(password));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function seedAdmin() {
+  try {
+    const snap = await collUsers.where('username', '==', 'admin').get();
+    if (snap.empty) {
+      const hash = await hashPassword('password2026');
+      await collUsers.add({ username: 'admin', passwordHash: hash, role: 'admin', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    }
+  } catch(e) { console.warn('Aviso ao inicializar admin:', e); }
+}
+
+async function doLogin(username, password) {
+  const hash = await hashPassword(password);
+  const snap = await collUsers.where('username', '==', username).get();
+  if (snap.empty) return null;
+  const doc = snap.docs[0];
+  if (doc.data().passwordHash !== hash) return null;
+  return { id: doc.id, username: doc.data().username, role: doc.data().role };
+}
 
 let clientes = []; let mpList = []; let pedidos = []; let financeiro = []; let servicos = [];
 
@@ -86,9 +115,56 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   };
 
-  startRealtimeListeners();
+  // ====== AUTH SETUP ======
+  function hideLoginOverlay(){ const o = document.getElementById('loginOverlay'); if(o) o.classList.add('hidden'); }
+  function showLoginOverlay(){ const o = document.getElementById('loginOverlay'); if(o) o.classList.remove('hidden'); const u = document.getElementById('loginUsername'); if(u) u.value=''; const p = document.getElementById('loginPassword'); if(p) p.value=''; const err = document.getElementById('loginError'); if(err) err.textContent=''; }
+  function applyRoleUI(){ const isAdmin = currentUser && currentUser.role === 'admin'; const sU = document.getElementById('sectionUsuarios'); if(sU) sU.style.display = isAdmin ? '' : 'none'; const mU = document.getElementById('menuUsuarios'); if(mU) mU.style.display = isAdmin ? '' : 'none'; const ni = document.getElementById('navUserInfo'); if(ni && currentUser){ ni.textContent = `${currentUser.username} (${isAdmin ? 'Admin' : 'Usuário'})`; ni.style.display = ''; } const bl = document.getElementById('btnLogout'); if(bl) bl.style.display = ''; }
 
-  // ====== FORMULÁRIOS ======
+  document.getElementById('formLogin').onsubmit = async function(e){
+    e.preventDefault();
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('loginError');
+    const btn = document.getElementById('btnLogin');
+    if(!username || !password){ errEl.textContent = 'Preencha usuário e senha!'; return; }
+    btn.disabled = true; btn.innerHTML = 'Aguarde...';
+    try {
+      const user = await doLogin(username, password);
+      if(!user){ errEl.textContent = 'Usuário ou senha inválidos!'; }
+      else { errEl.textContent = ''; currentUser = user; sessionStorage.setItem('currentUser', JSON.stringify(user)); hideLoginOverlay(); applyRoleUI(); setupUserManagement(); startRealtimeListeners(); }
+    } catch(err){ errEl.textContent = 'Erro ao fazer login. Tente novamente.'; }
+    btn.disabled = false; btn.innerHTML = '<span class="material-icons left">login</span>Entrar';
+  };
+
+  document.getElementById('btnLogout').onclick = function(e){
+    e.preventDefault();
+    _unsubs.forEach(fn => fn()); _unsubs = [];
+    currentUser = null; listenersStarted = false; sessionStorage.removeItem('currentUser');
+    clientes = []; mpList = []; pedidos = []; financeiro = []; servicos = [];
+    document.getElementById('sectionUsuarios').style.display = 'none';
+    document.getElementById('menuUsuarios').style.display = 'none';
+    document.getElementById('navUserInfo').style.display = 'none';
+    document.getElementById('btnLogout').style.display = 'none';
+    showLoginOverlay();
+  };
+
+  seedAdmin();
+  (async () => {
+    const _savedUser = sessionStorage.getItem('currentUser');
+    if(_savedUser){
+      try {
+        const parsed = JSON.parse(_savedUser);
+        const userDoc = await collUsers.doc(parsed.id).get();
+        if(userDoc.exists && userDoc.data().username === parsed.username){
+          currentUser = { id: userDoc.id, username: userDoc.data().username, role: userDoc.data().role };
+          sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+          hideLoginOverlay(); applyRoleUI(); setupUserManagement(); startRealtimeListeners();
+        } else {
+          sessionStorage.removeItem('currentUser');
+        }
+      } catch(e){ sessionStorage.removeItem('currentUser'); }
+    }
+  })();
   document.getElementById('formCliente').onsubmit = async function(e){
     e.preventDefault();
     const id = document.getElementById('clienteEditId').value || null;
@@ -584,13 +660,58 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ====== START ======
+  let _unsubs = [];
   function startRealtimeListeners(){
+    if(listenersStarted) return; listenersStarted = true;
     showStatus('Conectando ao Firestore...');
-    collClientes.orderBy('createdAt').onSnapshot(snapshot => { clientes = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarClientesUI(); atualizarPedidosUI(); atualizarServicosUI(); showStatus('Clientes sincronizados.'); }, err => showStatus('Erro ao ouvir clientes.', true));
-    collMP.orderBy('createdAt').onSnapshot(snapshot => { mpList = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarMPCadastroUI(); showStatus('MPs sincronizadas.'); }, err => showStatus('Erro ao ouvir MPs.', true));
-    collPedidos.orderBy('createdAt').onSnapshot(snapshot => { pedidos = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarPedidosUI(); showStatus('Pedidos sincronizados.'); }, err => showStatus('Erro ao ouvir pedidos.', true));
-    collFinanceiro.orderBy('createdAt').onSnapshot(snapshot => { financeiro = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarFinanceiroUI(); calcularSaldo(); showStatus('Financeiro sincronizado.'); }, err => showStatus('Erro ao ouvir financeiro.', true));
-    collServicos.orderBy('createdAt').onSnapshot(snapshot => { servicos = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarServicosUI(); showStatus('Serviços sincronizados.'); }, err => showStatus('Erro ao ouvir serviços.', true));
+    _unsubs.push(collClientes.orderBy('createdAt').onSnapshot(snapshot => { clientes = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarClientesUI(); atualizarPedidosUI(); atualizarServicosUI(); showStatus('Clientes sincronizados.'); }, err => showStatus('Erro ao ouvir clientes.', true)));
+    _unsubs.push(collMP.orderBy('createdAt').onSnapshot(snapshot => { mpList = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarMPCadastroUI(); showStatus('MPs sincronizadas.'); }, err => showStatus('Erro ao ouvir MPs.', true)));
+    _unsubs.push(collPedidos.orderBy('createdAt').onSnapshot(snapshot => { pedidos = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarPedidosUI(); showStatus('Pedidos sincronizados.'); }, err => showStatus('Erro ao ouvir pedidos.', true)));
+    _unsubs.push(collFinanceiro.orderBy('createdAt').onSnapshot(snapshot => { financeiro = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarFinanceiroUI(); calcularSaldo(); showStatus('Financeiro sincronizado.'); }, err => showStatus('Erro ao ouvir financeiro.', true)));
+    _unsubs.push(collServicos.orderBy('createdAt').onSnapshot(snapshot => { servicos = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarServicosUI(); showStatus('Serviços sincronizados.'); }, err => showStatus('Erro ao ouvir serviços.', true)));
+  }
+
+  // ====== GESTÃO DE USUÁRIOS ======
+  function setupUserManagement(){
+    const form = document.getElementById('formUsuario'); if(!form) return;
+    form.onsubmit = async function(e){
+      e.preventDefault();
+      const username = document.getElementById('usuarioNome').value.trim();
+      const password = document.getElementById('usuarioSenha').value;
+      const role = document.getElementById('usuarioPerfil').value;
+      if(!username || !password) return M.toast({html:'Preencha usuário e senha!'});
+      try {
+        const snap = await collUsers.where('username','==',username).get();
+        if(!snap.empty) return M.toast({html:'Usuário já existe!'});
+        const hash = await hashPassword(password);
+        await collUsers.add({ username, passwordHash: hash, role, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        form.reset(); M.updateTextFields(); M.FormSelect.init(document.getElementById('usuarioPerfil'));
+        M.toast({html:'Usuário criado!'}); renderUsuariosUI();
+      } catch(err){ showStatus('Erro ao salvar usuário.', true); }
+    };
+    M.FormSelect.init(document.getElementById('usuarioPerfil'));
+    renderUsuariosUI();
+  }
+
+  async function renderUsuariosUI(){
+    const tbody = document.querySelector('#usuariosTable tbody'); if(!tbody) return; tbody.innerHTML='';
+    try {
+      const snap = await collUsers.get();
+      snap.docs.forEach(doc => {
+        const data = doc.data();
+        const tr = document.createElement('tr');
+        let createdStr = '';
+        if(data.createdAt && data.createdAt.toDate){ createdStr = data.createdAt.toDate().toLocaleDateString('pt-BR'); }
+        tr.innerHTML = `<td>${escapeHTML(data.username||'')}</td><td>${escapeHTML(data.role==='admin'?'Administrador':'Usuário')}</td><td>${escapeHTML(createdStr)}</td>`;
+        const tdAct = document.createElement('td');
+        if(currentUser && doc.id !== currentUser.id){
+          const btnDel = document.createElement('button'); btnDel.className='btn-small red'; btnDel.title='Excluir usuário'; btnDel.innerHTML='<span class="material-icons">delete</span>';
+          btnDel.onclick = async()=>{ if(confirm(`Excluir usuário "${data.username}"?`)){ try{ await collUsers.doc(doc.id).delete(); M.toast({html:'Usuário excluído!'}); renderUsuariosUI(); }catch(e){ showStatus('Erro ao excluir usuário.', true); } } };
+          tdAct.appendChild(btnDel);
+        }
+        tr.appendChild(tdAct); tbody.appendChild(tr);
+      });
+    } catch(e){ console.error('Erro ao listar usuários:', e); }
   }
 
 });

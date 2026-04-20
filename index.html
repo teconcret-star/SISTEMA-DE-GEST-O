@@ -14,10 +14,37 @@
 </head>
 <body class="grey lighten-5">
 
+  <!-- LOGIN OVERLAY -->
+  <div id="loginOverlay">
+    <div class="login-card z-depth-2">
+      <div class="login-header">
+        <span class="material-icons" style="font-size:48px;">store</span>
+        <h5>SAP-Style</h5>
+        <p>Pedidos &amp; Estoque</p>
+      </div>
+      <form id="formLogin">
+        <div class="input-field">
+          <input id="loginUsername" type="text" autocomplete="username" required>
+          <label for="loginUsername">Usuário</label>
+        </div>
+        <div class="input-field">
+          <input id="loginPassword" type="password" autocomplete="current-password" required>
+          <label for="loginPassword">Senha</label>
+        </div>
+        <div id="loginError" class="login-error"></div>
+        <button class="btn blue" type="submit" id="btnLogin" style="width:100%;margin-top:8px;">
+          <span class="material-icons left">login</span>Entrar
+        </button>
+      </form>
+    </div>
+  </div>
+
   <nav class="blue">
     <div class="nav-wrapper">
       <span class="material-icons left" style="margin-left:8px;margin-top:9px;">store</span>
       <a href="#" class="brand-logo center">SAP-Style • Pedidos & Estoque</a>
+      <a href="#" id="btnLogout" class="right" title="Sair" style="display:none;height:42px;line-height:42px;padding:0 10px;"><span class="material-icons" style="vertical-align:middle;color:#fff;font-size:22px;">logout</span></a>
+      <span id="navUserInfo" class="right" style="display:none;font-size:12px;line-height:42px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;padding-right:4px;"></span>
     </div>
   </nav>
 
@@ -27,6 +54,7 @@
   <div id="menuOverlay" aria-hidden="true"></div>
   <nav id="sideMenu" aria-label="Menu lateral">
     <ul>
+      <li id="menuUsuarios" style="display:none" data-target="sectionUsuarios"><span class="item-icon"><span class="material-icons">manage_accounts</span></span><span>Gestão de Usuários</span></li>
       <li data-target="formCliente"><span class="item-icon"><span class="material-icons">person</span></span><span>Cadastro de Cliente</span></li>
       <li data-target="formCadastroMP"><span class="item-icon"><span class="material-icons">category</span></span><span>Cadastro de Produto (MP)</span></li>
       <li data-target="formPedidoSection"><span class="item-icon"><span class="material-icons">post_add</span></span><span>Novo Pedido</span></li>
@@ -200,6 +228,25 @@
     <div class="section-h">Saldo Atual Total</div>
     <div style="margin-bottom:32px;">
       <input id="saldoAtual" readonly class="input-field center" style="width:180px;font-weight:bold;text-align:center;color:green;">
+    </div>
+
+    <div id="sectionUsuarios" style="display:none">
+      <div class="section-h">Gestão de Usuários</div>
+      <form id="formUsuario" class="card-panel z-depth-1">
+        <div class="row">
+          <div class="input-field col s12 m4"><input id="usuarioNome" type="text" required><label for="usuarioNome">Usuário</label></div>
+          <div class="input-field col s12 m4"><input id="usuarioSenha" type="password" required><label for="usuarioSenha">Senha</label></div>
+          <div class="input-field col s12 m4"><select id="usuarioPerfil"><option value="usuario">Usuário</option><option value="admin">Administrador</option></select><label for="usuarioPerfil">Perfil</label></div>
+        </div>
+        <button class="btn blue" type="submit" style="width:100%;margin-top:10px;"><span class="material-icons left">person_add</span>Salvar Usuário</button>
+      </form>
+      <div class="section-h">Usuários Cadastrados</div>
+      <div class="scroll-table">
+        <table class="highlight responsive-table" id="usuariosTable">
+          <thead><tr><th>Usuário</th><th>Perfil</th><th>Criado em</th><th>Ações</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
