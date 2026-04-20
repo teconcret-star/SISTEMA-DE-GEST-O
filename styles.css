@@ -38,7 +38,7 @@ nav, .nav-wrapper {
 }
 .brand-logo { font-size: 18px !important; font-style: italic; font-weight: 700 !important; color: #081826 !important; }
 
-.container{ width: 98% !important; max-width: 1600px !important; margin: 8px auto !important; padding: 6px !important; }
+.container{ width: 98% !important; max-width: 1600px !important; margin: 8px auto !important; padding: 6px 6px 6px 48px !important; box-sizing: border-box; }
 
 .section-h{
   margin: 10px 0 4px 0; padding: 4px 8px; font-size: 18px; font-style: italic;

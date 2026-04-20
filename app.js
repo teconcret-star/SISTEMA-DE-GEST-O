@@ -591,7 +591,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function calcularSaldo(){
-    let saldoPedidos = 0; pedidos.forEach(p => { const custo = Number(p && p.custo ? p.custo : 0) || 0; if(custo > 0) saldoPedidos += custo; });
+    let saldoPedidos = 0; pedidos.forEach(p => { if(String(p && p.status).toLowerCase() === 'cancelado') return; const custo = Number(p && p.custo ? p.custo : 0) || 0; if(custo > 0) saldoPedidos += custo; });
     let saldoFinanceiro = 0; financeiro.forEach(mov => { const valor = Number(mov && mov.valor ? mov.valor : 0) || 0; if(String(mov.tipo).toLowerCase() === "entrada") saldoFinanceiro += valor; else if(String(mov.tipo).toLowerCase() === "saida") saldoFinanceiro -= valor; });
     const saldoFinal = saldoPedidos + saldoFinanceiro; const saldoEl = document.getElementById('saldoAtual'); if(saldoEl) saldoEl.value = "R$ " + saldoFinal.toFixed(2);
   }
@@ -673,7 +673,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function renderDashboard(){
-    if(!window.Chart) return;
+    if(!window.Chart){ setTimeout(() => renderDashboard(), 600); return; }
 
     const dataInicio = document.getElementById('dashDataInicio').value;
     const dataFim = document.getElementById('dashDataFim').value;
@@ -697,6 +697,9 @@ document.addEventListener('DOMContentLoaded', function () {
       return true;
     });
 
+    // Pedidos activos (excluindo Cancelado) para receita e volume
+    const pedidosAtivos = pedidosFilt.filter(p => String(p.status).toLowerCase() !== 'cancelado');
+
     // Filter financeiro
     const financFilt = financeiro.filter(m => {
       if(!(dtInicio || dtFim)) return true;
@@ -715,8 +718,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('kpiClientes').textContent = clientes.length;
     document.getElementById('kpiPedidos').textContent = pedidosFilt.length;
-    document.getElementById('kpiVolume').textContent = pedidosFilt.reduce((s,p) => s + (Number(p.kg)||0), 0).toFixed(1).replace('.',',') + ' kg';
-    document.getElementById('kpiReceita').textContent = 'R$ ' + pedidosFilt.reduce((s,p) => s + (Number(p.custo)||0), 0).toFixed(2).replace('.',',');
+    document.getElementById('kpiVolume').textContent = pedidosAtivos.reduce((s,p) => s + (Number(p.kg)||0), 0).toFixed(1).replace('.',',') + ' kg';
+    document.getElementById('kpiReceita').textContent = 'R$ ' + pedidosAtivos.reduce((s,p) => s + (Number(p.custo)||0), 0).toFixed(2).replace('.',',');
     document.getElementById('kpiDespesa').textContent = 'R$ ' + totalSaidas.toFixed(2).replace('.',',');
     document.getElementById('kpiSaldo').textContent = (saldoFin < 0 ? '-' : '') + 'R$ ' + Math.abs(saldoFin).toFixed(2).replace('.',',');
     const kpiSaldoCard = document.getElementById('kpiSaldoCard');
@@ -744,9 +747,9 @@ document.addEventListener('DOMContentLoaded', function () {
       options: { ...chartOpts, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
     });
 
-    // Chart 2: Volume por Produto (doughnut)
+    // Chart 2: Volume por Produto (doughnut) — apenas pedidos ativos
     const volProd = {};
-    pedidosFilt.forEach(p => { const k = p.produto || 'Outros'; volProd[k] = (volProd[k]||0) + (Number(p.kg)||0); });
+    pedidosAtivos.forEach(p => { const k = p.produto || 'Outros'; volProd[k] = (volProd[k]||0) + (Number(p.kg)||0); });
     const prodKeys = Object.keys(volProd);
     _dashCharts.produtos = new Chart(document.getElementById('chartProdutos'), {
       type: 'doughnut',
@@ -781,9 +784,9 @@ document.addEventListener('DOMContentLoaded', function () {
       options: { ...chartOpts, scales: { y: { beginAtZero: true } } }
     });
 
-    // Chart 4: Top 5 Clientes por Volume (horizontal bar)
+    // Chart 4: Top 5 Clientes por Volume (horizontal bar) — apenas pedidos ativos
     const cliVol = {};
-    pedidosFilt.forEach(p => {
+    pedidosAtivos.forEach(p => {
       const c = clientes.find(x => x.id === p.clienteId) || {};
       const n = c.nome || 'Desconhecido';
       cliVol[n] = (cliVol[n]||0) + (Number(p.kg)||0);
@@ -798,9 +801,9 @@ document.addEventListener('DOMContentLoaded', function () {
       options: { ...chartOpts, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
     });
 
-    // Chart 5: Receita por Produto (bar)
+    // Chart 5: Receita por Produto (bar) — apenas pedidos ativos
     const recProd = {};
-    pedidosFilt.forEach(p => { const k = p.produto || 'Outros'; recProd[k] = (recProd[k]||0) + (Number(p.custo)||0); });
+    pedidosAtivos.forEach(p => { const k = p.produto || 'Outros'; recProd[k] = (recProd[k]||0) + (Number(p.custo)||0); });
     const recProdKeys = Object.keys(recProd);
     _dashCharts.receitaProduto = new Chart(document.getElementById('chartReceitaProduto'), {
       type: 'bar',
@@ -845,6 +848,13 @@ document.addEventListener('DOMContentLoaded', function () {
   // Re-render dashboard on menu click
   const dashMenuLi = document.querySelector('#sideMenu li[data-target="sectionDashboard"]');
   if(dashMenuLi) dashMenuLi.addEventListener('click', () => renderDashboard());
+
+  // Re-render charts when window is resized (handles orientation changes and browser resize)
+  let _resizeTimer = null;
+  window.addEventListener('resize', () => {
+    if(_resizeTimer) clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => { renderDashboard(); }, 300);
+  });
 
   // ====== START ======
   let _unsubs = [];
