@@ -690,8 +690,13 @@ document.addEventListener('DOMContentLoaded', function () {
       if(statusFiltro && p.status !== statusFiltro) return false;
       if(dtInicio || dtFim){
         let d = null;
-        if(p.vencimento && typeof p.vencimento === 'string' && p.vencimento.includes('/')) d = parseDDMMYYYYToDate(p.vencimento);
-        if(!d) d = parseDDMMYYYYToDate(p.dataPedido);
+        if(p.vencimento && String(p.vencimento).toLowerCase().includes('vista')){
+          d = parseDDMMYYYYToDate(p.dataPedido);
+        } else if(p.vencimento && typeof p.vencimento === 'string' && p.vencimento.includes('/')){
+          d = parseDDMMYYYYToDate(p.vencimento);
+        } else {
+          d = parseDDMMYYYYToDate(p.dataPedido);
+        }
         if(!d) return false;
         if(dtInicio && d < dtInicio) return false;
         if(dtFim && d > dtFim) return false;
@@ -736,8 +741,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const pedMes = {};
     pedidosFilt.forEach(p => {
       let d = null;
-      if(p.vencimento && typeof p.vencimento === 'string' && p.vencimento.includes('/')) d = parseDDMMYYYYToDate(p.vencimento);
-      if(!d) d = parseDDMMYYYYToDate(p.dataPedido);
+      if(p.vencimento && String(p.vencimento).toLowerCase().includes('vista')){
+        d = parseDDMMYYYYToDate(p.dataPedido);
+      } else if(p.vencimento && typeof p.vencimento === 'string' && p.vencimento.includes('/')){
+        d = parseDDMMYYYYToDate(p.vencimento);
+      } else {
+        d = parseDDMMYYYYToDate(p.dataPedido);
+      }
       if(!d) return;
       const k = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
       pedMes[k] = (pedMes[k]||0) + 1;
