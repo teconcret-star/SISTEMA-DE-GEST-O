@@ -297,7 +297,8 @@ document.addEventListener('DOMContentLoaded', function () {
       const clienteId = document.getElementById('propostaCliente').value;
       const total = parseFloat(document.getElementById('propostaTotal').value);
       const dataRaw = document.getElementById('propostaData').value;
-      if(!clienteId || isNaN(total) || total < 0) return M.toast({html:'Preencha cliente e total da proposta!'});
+      if(!clienteId) return M.toast({html:'Selecione o cliente da proposta!'});
+      if(isNaN(total) || total <= 0) return M.toast({html:'Total da proposta deve ser maior que zero.'});
       const dataProposta = dataRaw ? formatDateToDDMMYYYY(parseDateInputAsLocal(dataRaw)) : formatDateToDDMMYYYY(new Date());
       const obj = {
         clienteId,
@@ -646,6 +647,8 @@ document.addEventListener('DOMContentLoaded', function () {
   function renderPropostaHTML(proposta, cliente){
     const enderecoCliente = [cliente.endereco || '', cliente.numero || '', cliente.complemento || ''].filter(Boolean).join(' - ');
     const validade = Number(proposta.validadeDias) || 30;
+    const dadosBancariosHtml = escapeHTML(proposta.dadosBancarios || '').replace(/\n/g, '<br>');
+    const observacoesHtml = escapeHTML(proposta.observacoes || '').replace(/\n/g, '<br>');
     return `<!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -677,13 +680,13 @@ document.addEventListener('DOMContentLoaded', function () {
   </table>
   <h3>Dados bancários</h3>
   <table>
-    <tr><td>${escapeHTML(proposta.dadosBancarios || '')}</td></tr>
+    <tr><td>${dadosBancariosHtml}</td></tr>
   </table>
   <h3>Condições gerais</h3>
   <table>
     <tr><th style="width:70%;">Validade da proposta</th><td>${validade} dias</td></tr>
   </table>
-  ${proposta.observacoes ? `<h3>Observações</h3><table><tr><td>${escapeHTML(proposta.observacoes)}</td></tr></table>` : ''}
+  ${proposta.observacoes ? `<h3>Observações</h3><table><tr><td>${observacoesHtml}</td></tr></table>` : ''}
   <p>Atenciosamente,</p>
   <p>${escapeHTML(proposta.assinatura || '')}</p>
 </body>
@@ -697,18 +700,37 @@ document.addEventListener('DOMContentLoaded', function () {
       const tr = document.createElement('tr');
       tr.innerHTML = `<td>${escapeHTML(p.data || '')}</td><td>${escapeHTML(c.nome || '')}</td><td>R$ ${formatCurrencyBR(p.total || 0)}</td><td>${escapeHTML(p.condicaoPagamento || '')}</td><td>${Number(p.validadeDias || 30)} dias</td>`;
       const tdActions = document.createElement('td');
+      const btnEdit = document.createElement('button'); btnEdit.className='btn-small orange small-action'; btnEdit.title='Editar proposta'; btnEdit.innerHTML='<span class="material-icons">edit</span>'; btnEdit.onclick=()=> window.editarProposta(p.id);
       const btnView = document.createElement('button'); btnView.className='btn-small blue small-action'; btnView.title='Visualizar/Imprimir'; btnView.innerHTML='<span class="material-icons">visibility</span>'; btnView.onclick=()=> window.visualizarProposta(p.id);
       const btnDel = document.createElement('button'); btnDel.className='btn-small red'; btnDel.title='Excluir'; btnDel.innerHTML='<span class="material-icons">delete</span>'; btnDel.onclick=()=> window.excluirProposta(p.id);
-      tdActions.appendChild(btnView); tdActions.appendChild(btnDel); tr.appendChild(tdActions); tbody.appendChild(tr);
+      tdActions.appendChild(btnEdit); tdActions.appendChild(btnView); tdActions.appendChild(btnDel); tr.appendChild(tdActions); tbody.appendChild(tr);
     });
     reapplyAllFilters();
   }
+
+  window.editarProposta = function(id){
+    const p = propostas.find(x => x.id === id); if(!p) return;
+    document.getElementById('propostaEditId').value = p.id;
+    document.getElementById('propostaCliente').value = p.clienteId || '';
+    document.getElementById('propostaData').value = p.data ? (() => { const parts = String(p.data).split('/'); return (parts.length===3) ? `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}` : formatDateToISO(new Date()); })() : formatDateToISO(new Date());
+    document.getElementById('propostaTotal').value = Number(p.total || 0);
+    document.getElementById('propostaTitulo').value = p.titulo || 'Proposta CIF';
+    document.getElementById('propostaCondicaoPagamento').value = p.condicaoPagamento || '';
+    document.getElementById('propostaValidade').value = Number(p.validadeDias || 30);
+    document.getElementById('propostaDadosBancarios').value = p.dadosBancarios || '';
+    document.getElementById('propostaObservacoes').value = p.observacoes || '';
+    document.getElementById('propostaAssinatura').value = p.assinatura || '';
+    M.updateTextFields();
+    M.FormSelect.init(document.getElementById('propostaCliente'));
+    document.getElementById('sectionPropostas').scrollIntoView({behavior:'smooth', block:'start'});
+  };
 
   window.visualizarProposta = function(id){
     const proposta = propostas.find(x => x.id === id); if(!proposta) return;
     const cliente = clientes.find(x => x.id === proposta.clienteId) || {};
     const popup = window.open('', '_blank');
     if(!popup){ M.toast({html:'Permita pop-up para visualizar a proposta.', classes:'red'}); return; }
+    popup.document.open();
     popup.document.write(renderPropostaHTML(proposta, cliente));
     popup.document.close();
   };
