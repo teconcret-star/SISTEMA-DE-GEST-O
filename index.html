@@ -305,6 +305,25 @@
 
     <div id="sectionPropostas">
       <div class="section-h">Proposta Comercial</div>
+
+      <div class="card-panel z-depth-1" id="empresaConfigPanel" style="margin-bottom:18px;">
+        <div style="font-weight:700;font-size:15px;margin-bottom:12px;"><span class="material-icons" style="vertical-align:middle;font-size:18px;margin-right:6px;">business</span>Configurações da Empresa</div>
+        <div class="row" style="margin-bottom:0;">
+          <div class="input-field col s12 m6"><input id="empresaNome" type="text"><label for="empresaNome" class="active">Nome da empresa</label></div>
+          <div class="input-field col s12 m6"><input id="empresaCNPJ" type="text"><label for="empresaCNPJ" class="active">CNPJ</label></div>
+          <div class="input-field col s12 m6"><input id="empresaEndereco" type="text"><label for="empresaEndereco" class="active">Endereço (rua, número)</label></div>
+          <div class="input-field col s12 m4"><input id="empresaCidade" type="text"><label for="empresaCidade" class="active">Cidade / UF</label></div>
+          <div class="input-field col s12 m2"><input id="empresaCEP" type="text"><label for="empresaCEP" class="active">CEP</label></div>
+          <div class="col s12 m12" style="margin-bottom:10px;">
+            <label style="font-size:12px;color:#666;">Logo da empresa (exibido no canto superior esquerdo da proposta)</label><br>
+            <input type="file" id="empresaLogoInput" accept="image/*" style="margin-top:6px;">
+            <div id="empresaLogoPreview" style="margin-top:8px;"></div>
+          </div>
+        </div>
+        <button type="button" id="btnSalvarEmpresaConfig" class="btn blue btn-small"><span class="material-icons left" style="font-size:16px;">save</span>Salvar configurações</button>
+        <button type="button" id="btnRemoverLogo" class="btn red btn-small" style="margin-left:8px;"><span class="material-icons left" style="font-size:16px;">delete</span>Remover logo</button>
+      </div>
+
       <form id="formProposta" class="card-panel z-depth-1">
         <input type="hidden" id="propostaEditId" value="">
         <div class="row">
