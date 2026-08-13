@@ -23,6 +23,7 @@ const collMP = db.collection('mpList');
 const collPedidos = db.collection('pedidos');
 const collFinanceiro = db.collection('financeiro');
 const collServicos = db.collection('servicos');
+const collPropostas = db.collection('propostas');
 const collUsers = db.collection('users');
 
 let currentUser = null;
@@ -53,7 +54,7 @@ async function doLogin(username, password) {
   return { id: doc.id, username: doc.data().username, role: doc.data().role };
 }
 
-let clientes = []; let mpList = []; let pedidos = []; let financeiro = []; let servicos = [];
+let clientes = []; let mpList = []; let pedidos = []; let financeiro = []; let servicos = []; let propostas = [];
 
 let statusEl = document.getElementById('status');
 if (!statusEl) {
@@ -76,6 +77,8 @@ function maskPhone(v){ v = onlyDigits(v); if(v.length > 11) v = v.slice(0,11); i
 function parseDateInputAsLocal(dateStr){ if(!dateStr) return null; const parts = dateStr.split('-'); if(parts.length !== 3) return null; return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])); }
 function formatDateToDDMMYYYY(dateObj){ if(!dateObj || !(dateObj instanceof Date)) return ""; return `${String(dateObj.getDate()).padStart(2,'0')}/${String(dateObj.getMonth()+1).padStart(2,'0')}/${dateObj.getFullYear()}`; }
 function parseDDMMYYYYToDate(s){ if(!s || typeof s !== 'string') return null; const parts = s.split('/'); if(parts.length !== 3) return null; return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])); }
+function formatDateToISO(dateObj){ if(!dateObj || !(dateObj instanceof Date)) return ""; return `${dateObj.getFullYear()}-${String(dateObj.getMonth()+1).padStart(2,'0')}-${String(dateObj.getDate()).padStart(2,'0')}`; }
+function formatCurrencyBR(v){ const n = Number(v) || 0; return n.toFixed(2).replace('.', ','); }
 function escapeHTML(s){ if(s === null || s === undefined) return ''; return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; }); }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -143,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function () {
     e.preventDefault();
     _unsubs.forEach(fn => fn()); _unsubs = [];
     currentUser = null; listenersStarted = false; sessionStorage.removeItem('currentUser');
-    clientes = []; mpList = []; pedidos = []; financeiro = []; servicos = [];
+    clientes = []; mpList = []; pedidos = []; financeiro = []; servicos = []; propostas = [];
     document.getElementById('sectionUsuarios').style.display = 'none';
     document.getElementById('menuUsuarios').style.display = 'none';
     document.getElementById('navUserInfo').style.display = 'none';
@@ -270,6 +273,52 @@ document.addEventListener('DOMContentLoaded', function () {
   servicoParcelasEl.addEventListener('change', function(){ renderServicosVencimentos(); M.updateTextFields(); });
   renderServicosVencimentos();
 
+  function resetFormProposta(){
+    document.getElementById('propostaEditId').value = '';
+    document.getElementById('formProposta').reset();
+    document.getElementById('propostaTitulo').value = 'Proposta CIF';
+    document.getElementById('propostaCondicaoPagamento').value = 'Boleto 7 e 28 dias.';
+    document.getElementById('propostaValidade').value = 30;
+    document.getElementById('propostaAssinatura').value = 'Fernando S. da Silva';
+    const dataEl = document.getElementById('propostaData');
+    if(dataEl) dataEl.value = formatDateToISO(new Date());
+    const dadosBancariosEl = document.getElementById('propostaDadosBancarios');
+    if(dadosBancariosEl) dadosBancariosEl.value = `NOME: CXPTEC ENGENHARIA\nESPEC.TECNOLOGIA DO CONCRETO;\nCNPJ: 61.785.230/0001-06 (PIX)`;
+    M.updateTextFields();
+    M.FormSelect.init(document.getElementById('propostaCliente'));
+  }
+
+  resetFormProposta();
+
+  const btnSalvarProposta = document.getElementById('btnSalvarProposta');
+  if(btnSalvarProposta){
+    btnSalvarProposta.onclick = async function(){
+      const editId = document.getElementById('propostaEditId').value || null;
+      const clienteId = document.getElementById('propostaCliente').value;
+      const total = parseFloat(document.getElementById('propostaTotal').value);
+      const dataRaw = document.getElementById('propostaData').value;
+      if(!clienteId || isNaN(total) || total < 0) return M.toast({html:'Preencha cliente e total da proposta!'});
+      const dataProposta = dataRaw ? formatDateToDDMMYYYY(parseDateInputAsLocal(dataRaw)) : formatDateToDDMMYYYY(new Date());
+      const obj = {
+        clienteId,
+        data: dataProposta,
+        total,
+        titulo: (document.getElementById('propostaTitulo').value || 'Proposta CIF').trim(),
+        condicaoPagamento: (document.getElementById('propostaCondicaoPagamento').value || '').trim(),
+        validadeDias: Number(document.getElementById('propostaValidade').value) || 30,
+        dadosBancarios: (document.getElementById('propostaDadosBancarios').value || '').trim(),
+        observacoes: (document.getElementById('propostaObservacoes').value || '').trim(),
+        assinatura: (document.getElementById('propostaAssinatura').value || '').trim(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      try {
+        if(editId){ await collPropostas.doc(editId).set(obj, { merge: true }); M.toast({html:'Proposta atualizada!'}); }
+        else { obj.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await collPropostas.add(obj); M.toast({html:'Proposta salva!'}); }
+        resetFormProposta();
+      } catch(err){ showStatus('Erro ao salvar proposta.', true); }
+    };
+  }
+
   document.getElementById('btnServico').onclick = async function(){
     const editId = document.getElementById('servicoEditId').value || null; const clienteId = document.getElementById('servicoCliente').value;
     const desc = document.getElementById('servicoDesc').value.trim(); const valor = parseFloat(document.getElementById('servicoValor').value) || 0;
@@ -323,6 +372,7 @@ document.addEventListener('DOMContentLoaded', function () {
     XLSX.utils.book_append_sheet(wb, toSheet(pedidos.map(p => { const c = clientes.find(x=>x.id === p.clienteId) || {}; return { cliente: c.nome || "", documento: c.doc || "", produto: p.produto || "", kg: p.kg, precoKg: p.precoKg, custo: p.custo, dataPedido: p.dataPedido || "", vencimento: p.vencimento || "", status: p.status || "" }; }), ["cliente","documento","produto","kg","precoKg","custo","dataPedido","vencimento","status"]), "Pedidos");
     XLSX.utils.book_append_sheet(wb, toSheet(financeiro.map(f => ({ tipo: f.tipo, desc: f.desc, valor: f.valor, vencimento: f.vencimento })), ["tipo","desc","valor","vencimento"]), "Financeiro");
     XLSX.utils.book_append_sheet(wb, toSheet(servicos.map(s => { const c = clientes.find(x=>x.id === s.clienteId) || {}; return { cliente: c.nome || "", documento: c.doc || "", servico: s.desc || "", valor: s.valor || 0, parcelas: s.parcelas || 1, vencimentos: (s.vencimentos || []).join(' ; ') }; }), ["cliente","documento","servico","valor","parcelas","vencimentos"]), "Servicos");
+    XLSX.utils.book_append_sheet(wb, toSheet(propostas.map(p => { const c = clientes.find(x=>x.id === p.clienteId) || {}; return { data: p.data || "", cliente: c.nome || "", documento: c.doc || "", total: p.total || 0, titulo: p.titulo || "", condicaoPagamento: p.condicaoPagamento || "", validadeDias: p.validadeDias || 30 }; }), ["data","cliente","documento","total","titulo","condicaoPagamento","validadeDias"]), "Propostas");
     XLSX.writeFile(wb, "controle_pedidos_firestore.xlsx");
   };
 
@@ -421,11 +471,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function reapplyAllFilters(){
     if(typeof window.applyColumnFilters === 'function'){
-      window.applyColumnFilters('clientesTable'); window.applyColumnFilters('mpTable'); window.applyColumnFilters('pedidosTable'); window.applyColumnFilters('financeiroTable'); window.applyColumnFilters('servicosTable');
+      window.applyColumnFilters('clientesTable'); window.applyColumnFilters('mpTable'); window.applyColumnFilters('pedidosTable'); window.applyColumnFilters('financeiroTable'); window.applyColumnFilters('servicosTable'); window.applyColumnFilters('propostasTable');
     }
   }
 
-  setupColumnFilters('clientesTable'); setupColumnFilters('mpTable'); setupColumnFilters('pedidosTable'); setupColumnFilters('financeiroTable'); setupColumnFilters('servicosTable');
+  setupColumnFilters('clientesTable'); setupColumnFilters('mpTable'); setupColumnFilters('pedidosTable'); setupColumnFilters('financeiroTable'); setupColumnFilters('servicosTable'); setupColumnFilters('propostasTable');
 
   // ====== EDIÇÃO GLOBAL (FORMS) ======
   window.editarCliente = function(id) {
@@ -453,8 +503,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // ====== RENDERIZAÇÃO DAS TABELAS UI ======
   function atualizarClientesUI(){
     const tbody = document.querySelector("#clientesTable tbody"); if(!tbody) return; tbody.innerHTML = "";
-    const select = document.getElementById('pedidoCliente'); const servicoSelect = document.getElementById('servicoCliente');
-    if(select) select.innerHTML = '<option value="" disabled selected>Selecione o cliente</option>'; if(servicoSelect) servicoSelect.innerHTML = '<option value="" disabled selected>Selecione o cliente</option>';
+    const select = document.getElementById('pedidoCliente'); const servicoSelect = document.getElementById('servicoCliente'); const propostaSelect = document.getElementById('propostaCliente');
+    if(select) select.innerHTML = '<option value="" disabled selected>Selecione o cliente</option>'; if(servicoSelect) servicoSelect.innerHTML = '<option value="" disabled selected>Selecione o cliente</option>'; if(propostaSelect) propostaSelect.innerHTML = '<option value="" disabled selected>Selecione o cliente</option>';
     clientes.forEach((c) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `<td data-field="nome">${escapeHTML(c.nome || "")}</td><td data-field="docTipo">${escapeHTML((c.docTipo === 'cnpj') ? 'CNPJ' : 'CPF')}</td><td data-field="doc">${escapeHTML(c.doc || "")}</td><td data-field="tel">${escapeHTML(c.tel || "")}</td><td data-field="email">${escapeHTML(c.email || "")}</td><td data-field="cep">${escapeHTML(c.cep || "")}</td><td data-field="endereco">${escapeHTML(c.endereco || "")}</td><td data-field="numero">${escapeHTML(c.numero || "")}</td><td data-field="complemento">${escapeHTML(c.complemento || "")}</td>`;
@@ -465,8 +515,9 @@ document.addEventListener('DOMContentLoaded', function () {
       tdActions.appendChild(btnEdit); tdActions.appendChild(btnInline); tdActions.appendChild(btnDel); tr.appendChild(tdActions); tbody.appendChild(tr);
       if(select){ const option = document.createElement('option'); option.value = c.id; option.text = `${c.nome} (${c.doc || ""})`; select.appendChild(option); }
       if(servicoSelect){ const option2 = document.createElement('option'); option2.value = c.id; option2.text = `${c.nome} (${c.doc || ""})`; servicoSelect.appendChild(option2); }
+      if(propostaSelect){ const option3 = document.createElement('option'); option3.value = c.id; option3.text = `${c.nome} (${c.doc || ""})`; propostaSelect.appendChild(option3); }
     });
-    if(window.M) M.FormSelect.init(document.querySelectorAll('#pedidoCliente, #servicoCliente'));
+    if(window.M) M.FormSelect.init(document.querySelectorAll('#pedidoCliente, #servicoCliente, #propostaCliente'));
     reapplyAllFilters();
     scheduleDashboardUpdate();
   }
@@ -591,6 +642,76 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     checkVencimentosServicos7dias(); reapplyAllFilters();
   }
+
+  function renderPropostaHTML(proposta, cliente){
+    const enderecoCliente = [cliente.endereco || '', cliente.numero || '', cliente.complemento || ''].filter(Boolean).join(' - ');
+    const validade = Number(proposta.validadeDias) || 30;
+    return `<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Proposta Comercial</title>
+  <style>
+    body{font-family:Arial,sans-serif;padding:24px;color:#111;}
+    table{width:100%;border-collapse:collapse;margin-bottom:12px;}
+    th,td{border:1px solid #222;padding:8px;vertical-align:top;}
+    h2,h3{margin:0 0 10px 0;}
+    .btn-print{margin-bottom:12px;padding:8px 12px;cursor:pointer;}
+    @media print {.btn-print{display:none;}}
+  </style>
+</head>
+<body>
+  <button class="btn-print" onclick="window.print()">Imprimir proposta</button>
+  <h2>Proposta Comercial</h2>
+  <table>
+    <tr><th>Cliente</th><td>${escapeHTML(cliente.nome || '')}</td><th>Documento</th><td>${escapeHTML(cliente.doc || '')}</td></tr>
+    <tr><th>Telefone</th><td>${escapeHTML(cliente.tel || '')}</td><th>E-mail</th><td>${escapeHTML(cliente.email || '')}</td></tr>
+    <tr><th>Endereço</th><td colspan="3">${escapeHTML(enderecoCliente)}</td></tr>
+  </table>
+  <table>
+    <tr><th style="width:25%;">Data</th><td>${escapeHTML(proposta.data || '')}</td><th style="width:25%;">Total da proposta</th><td>R$ ${formatCurrencyBR(proposta.total || 0)}</td></tr>
+  </table>
+  <h3>Condições comerciais</h3>
+  <table>
+    <tr><td><strong>${escapeHTML(proposta.titulo || 'Proposta CIF')}</strong><br>Condição de pagamento:<br>${escapeHTML(proposta.condicaoPagamento || '')}</td></tr>
+  </table>
+  <h3>Dados bancários</h3>
+  <table>
+    <tr><td>${escapeHTML(proposta.dadosBancarios || '')}</td></tr>
+  </table>
+  <h3>Condições gerais</h3>
+  <table>
+    <tr><th style="width:70%;">Validade da proposta</th><td>${validade} dias</td></tr>
+  </table>
+  ${proposta.observacoes ? `<h3>Observações</h3><table><tr><td>${escapeHTML(proposta.observacoes)}</td></tr></table>` : ''}
+  <p>Atenciosamente,</p>
+  <p>${escapeHTML(proposta.assinatura || '')}</p>
+</body>
+</html>`;
+  }
+
+  function atualizarPropostasUI(){
+    const tbody = document.querySelector('#propostasTable tbody'); if(!tbody) return; tbody.innerHTML = "";
+    propostas.forEach((p) => {
+      const c = clientes.find(x => x.id === p.clienteId) || {};
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHTML(p.data || '')}</td><td>${escapeHTML(c.nome || '')}</td><td>R$ ${formatCurrencyBR(p.total || 0)}</td><td>${escapeHTML(p.condicaoPagamento || '')}</td><td>${Number(p.validadeDias || 30)} dias</td>`;
+      const tdActions = document.createElement('td');
+      const btnView = document.createElement('button'); btnView.className='btn-small blue small-action'; btnView.title='Visualizar/Imprimir'; btnView.innerHTML='<span class="material-icons">visibility</span>'; btnView.onclick=()=> window.visualizarProposta(p.id);
+      const btnDel = document.createElement('button'); btnDel.className='btn-small red'; btnDel.title='Excluir'; btnDel.innerHTML='<span class="material-icons">delete</span>'; btnDel.onclick=()=> window.excluirProposta(p.id);
+      tdActions.appendChild(btnView); tdActions.appendChild(btnDel); tr.appendChild(tdActions); tbody.appendChild(tr);
+    });
+    reapplyAllFilters();
+  }
+
+  window.visualizarProposta = function(id){
+    const proposta = propostas.find(x => x.id === id); if(!proposta) return;
+    const cliente = clientes.find(x => x.id === proposta.clienteId) || {};
+    const popup = window.open('', '_blank');
+    if(!popup){ M.toast({html:'Permita pop-up para visualizar a proposta.', classes:'red'}); return; }
+    popup.document.write(renderPropostaHTML(proposta, cliente));
+    popup.document.close();
+  };
 
   function calcularSaldo(){
     let saldoPedidos = 0; pedidos.forEach(p => { if(String(p && p.status).toLowerCase() === 'cancelado') return; const custo = Number(p && p.custo ? p.custo : 0) || 0; if(custo > 0) saldoPedidos += custo; });
@@ -740,6 +861,7 @@ document.addEventListener('DOMContentLoaded', function () {
   window.excluirMP = async function(id){ if(confirm("Excluir MP?")) { await collMP.doc(id).delete(); M.toast({html:'Excluído!'}); } };
   window.excluirPedido = async function(id){ if(confirm("Excluir pedido?")) { await collPedidos.doc(id).delete(); M.toast({html:'Excluído!'}); } };
   window.excluirServico = async function(id){ if(confirm("Excluir serviço?")) { await collServicos.doc(id).delete(); M.toast({html:'Excluído!'}); } };
+  window.excluirProposta = async function(id){ if(confirm("Excluir proposta?")) { await collPropostas.doc(id).delete(); M.toast({html:'Excluído!'}); } };
   window.excluirFinanceiro = async function(id){ if(!id) return; if(confirm('Tem certeza que deseja excluir esta movimentação financeira?')){ try{ await collFinanceiro.doc(id).delete(); M.toast({ html: 'Movimentação excluída!' }); calcularSaldo(); }catch(err){ showStatus('Erro ao excluir', true); } } };
 
   // ====== EDIÇÃO INLINE (TABELAS) ======
@@ -765,7 +887,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function cancelRowEdits(tr){
     tr.classList.remove('editing-row');
-    if(typeof atualizarClientesUI === 'function') atualizarClientesUI(); if(typeof atualizarMPCadastroUI === 'function') atualizarMPCadastroUI(); if(typeof atualizarPedidosUI === 'function') atualizarPedidosUI(); if(typeof atualizarFinanceiroUI === 'function') atualizarFinanceiroUI(); if(typeof atualizarServicosUI === 'function') atualizarServicosUI();
+    if(typeof atualizarClientesUI === 'function') atualizarClientesUI(); if(typeof atualizarMPCadastroUI === 'function') atualizarMPCadastroUI(); if(typeof atualizarPedidosUI === 'function') atualizarPedidosUI(); if(typeof atualizarFinanceiroUI === 'function') atualizarFinanceiroUI(); if(typeof atualizarServicosUI === 'function') atualizarServicosUI(); if(typeof atualizarPropostasUI === 'function') atualizarPropostasUI();
   }
 
   async function saveRowEdits(tr, collectionName, id){
@@ -1008,6 +1130,7 @@ document.addEventListener('DOMContentLoaded', function () {
     _unsubs.push(collPedidos.orderBy('createdAt').onSnapshot(snapshot => { pedidos = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarPedidosUI(); showStatus('Pedidos sincronizados.'); }, err => showStatus('Erro ao ouvir pedidos.', true)));
     _unsubs.push(collFinanceiro.orderBy('createdAt').onSnapshot(snapshot => { financeiro = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarFinanceiroUI(); calcularSaldo(); showStatus('Financeiro sincronizado.'); }, err => showStatus('Erro ao ouvir financeiro.', true)));
     _unsubs.push(collServicos.orderBy('createdAt').onSnapshot(snapshot => { servicos = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarServicosUI(); showStatus('Serviços sincronizados.'); }, err => showStatus('Erro ao ouvir serviços.', true)));
+    _unsubs.push(collPropostas.orderBy('createdAt').onSnapshot(snapshot => { propostas = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarPropostasUI(); showStatus('Propostas sincronizadas.'); }, err => showStatus('Erro ao ouvir propostas.', true)));
   }
 
   // ====== GESTÃO DE USUÁRIOS ======
