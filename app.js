@@ -274,6 +274,11 @@ document.addEventListener('DOMContentLoaded', function () {
   renderServicosVencimentos();
 
   let propostaItens = [];
+  let propostaItemCounter = 0;
+  function gerarIdItemProposta(){
+    propostaItemCounter += 1;
+    return `proposta-item-${propostaItemCounter}`;
+  }
   function gerarNumeroProposta(){
     const now = new Date();
     return `PROP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
@@ -315,7 +320,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const precoUnitarioRaw = item.precoUnitario !== undefined ? item.precoUnitario : (item.preco || item.precoBase || mp.preco || 0);
     const precoUnitario = Number(precoUnitarioRaw) || 0;
     return {
-      id: item.id || `proposta-item-${Date.now()}-${index}`,
+      id: item.id || gerarIdItemProposta(),
       mpId: item.mpId || '',
       descricao: item.descricao || item.tipo || mp.tipo || '',
       unidade: item.unidade || mp.unidade || '',
@@ -360,6 +365,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const tbody = document.querySelector('#propostaItensTable tbody');
     if(!tbody) return;
     tbody.innerHTML = '';
+    if(!propostaItens.length){
+      const trEmpty = document.createElement('tr');
+      trEmpty.innerHTML = '<td colspan="8" style="text-align:center;color:#55697d;">Nenhum item adicionado. Use o botão "Adicionar item".</td>';
+      tbody.appendChild(trEmpty);
+      atualizarTotaisProposta();
+      return;
+    }
     propostaItens.forEach((item, index) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -411,7 +423,6 @@ document.addEventListener('DOMContentLoaded', function () {
     tbody.querySelectorAll('.proposta-item-remover').forEach(btn => {
       btn.addEventListener('click', (e) => {
         propostaItens.splice(Number(e.currentTarget.dataset.index), 1);
-        if(!propostaItens.length) propostaItens.push(normalizarItemProposta({ quantidade: 1, precoUnitario: 0 }, 0));
         renderTabelaItensProposta();
       });
     });
@@ -453,10 +464,10 @@ document.addEventListener('DOMContentLoaded', function () {
       const dataRaw = document.getElementById('propostaData').value;
       if(!clienteId) return M.toast({html:'Selecione o cliente da proposta!'});
       const itensValidos = propostaItens.map((item, index) => normalizarItemProposta(item, index)).filter(item => item.mpId && item.quantidade > 0 && item.precoUnitario >= 0);
-      if(!itensValidos.length) return M.toast({html:'Adicione pelo menos um item válido na proposta!'});
+      if(!itensValidos.length) return M.toast({html:'Adicione ao menos um item/MP com quantidade informada para salvar a proposta.'});
       propostaItens = itensValidos;
       const total = atualizarTotaisProposta();
-      if(isNaN(total) || total <= 0) return M.toast({html:'O total da proposta deve ser maior que zero.'});
+      if(total <= 0) return M.toast({html:'Defina preços e quantidades maiores que zero para gerar o total da proposta.'});
       const dataProposta = dataRaw ? formatDateToDDMMYYYY(parseDateInputAsLocal(dataRaw)) : formatDateToDDMMYYYY(new Date());
       const obj = {
         clienteId,
@@ -706,7 +717,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if(servicoSelect && currentServico) servicoSelect.value = currentServico;
     if(propostaSelect && currentProposta) propostaSelect.value = currentProposta;
     if(window.M) M.FormSelect.init(document.querySelectorAll('#pedidoCliente, #servicoCliente, #propostaCliente'));
-    preencherResumoClienteProposta(currentProposta || (propostaSelect ? propostaSelect.value : ''));
+    preencherResumoClienteProposta(currentProposta || '');
     reapplyAllFilters();
     scheduleDashboardUpdate();
   }
