@@ -273,38 +273,219 @@ document.addEventListener('DOMContentLoaded', function () {
   servicoParcelasEl.addEventListener('change', function(){ renderServicosVencimentos(); M.updateTextFields(); });
   renderServicosVencimentos();
 
+  let propostaItens = [];
+  function gerarNumeroProposta(){
+    const now = new Date();
+    return `PROP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+  }
+  function getClienteEnderecoFormatado(cliente){
+    if(!cliente) return '';
+    return [
+      cliente.endereco || '',
+      cliente.numero ? `Nº ${cliente.numero}` : '',
+      cliente.complemento || '',
+      cliente.cep ? `CEP ${cliente.cep}` : ''
+    ].filter(Boolean).join(' • ');
+  }
+  function preencherResumoClienteProposta(clienteId){
+    const cliente = clientes.find(x => x.id === clienteId) || null;
+    document.getElementById('propostaClienteNome').textContent = cliente ? (cliente.nome || '—') : 'Selecione um cliente';
+    document.getElementById('propostaClienteDoc').textContent = cliente ? (cliente.doc || '—') : '—';
+    document.getElementById('propostaClienteTel').textContent = cliente ? (cliente.tel || '—') : '—';
+    document.getElementById('propostaClienteEmail').textContent = cliente ? (cliente.email || '—') : '—';
+    document.getElementById('propostaClienteEndereco').textContent = cliente ? (getClienteEnderecoFormatado(cliente) || '—') : '—';
+  }
+  function criarSnapshotCliente(clienteId){
+    const cliente = clientes.find(x => x.id === clienteId) || {};
+    return {
+      nome: cliente.nome || '',
+      doc: cliente.doc || '',
+      tel: cliente.tel || '',
+      email: cliente.email || '',
+      endereco: cliente.endereco || '',
+      numero: cliente.numero || '',
+      complemento: cliente.complemento || '',
+      cep: cliente.cep || ''
+    };
+  }
+  function normalizarItemProposta(item = {}, index = 0){
+    const mp = mpList.find(x => x.id === item.mpId) || {};
+    const precoBase = Number(item.precoBase !== undefined ? item.precoBase : (mp.preco || 0)) || 0;
+    const quantidade = Number(item.quantidade !== undefined ? item.quantidade : (item.qtd || 0)) || 0;
+    const precoUnitarioRaw = item.precoUnitario !== undefined ? item.precoUnitario : (item.preco || item.precoBase || mp.preco || 0);
+    const precoUnitario = Number(precoUnitarioRaw) || 0;
+    return {
+      id: item.id || `proposta-item-${Date.now()}-${index}`,
+      mpId: item.mpId || '',
+      descricao: item.descricao || item.tipo || mp.tipo || '',
+      unidade: item.unidade || mp.unidade || '',
+      precoBase,
+      quantidade,
+      precoUnitario,
+      total: Number(item.total) || (quantidade * precoUnitario)
+    };
+  }
+  function sincronizarItensPropostaComCadastro(){
+    propostaItens = propostaItens.map((item, index) => {
+      const mp = mpList.find(x => x.id === item.mpId);
+      if(!mp) return normalizarItemProposta(item, index);
+      return normalizarItemProposta({
+        ...item,
+        descricao: mp.tipo || item.descricao,
+        unidade: mp.unidade || item.unidade,
+        precoBase: Number(mp.preco || 0),
+        precoUnitario: Number(item.precoUnitario || 0) > 0 ? item.precoUnitario : Number(mp.preco || 0)
+      }, index);
+    });
+  }
+  function atualizarTotaisProposta(){
+    let subtotal = 0;
+    propostaItens = propostaItens.map((item, index) => {
+      const normalizado = normalizarItemProposta(item, index);
+      normalizado.total = (Number(normalizado.quantidade) || 0) * (Number(normalizado.precoUnitario) || 0);
+      subtotal += normalizado.total;
+      return normalizado;
+    });
+    const subtotalEl = document.getElementById('propostaSubtotal');
+    const totalEl = document.getElementById('propostaTotal');
+    const subtotalDisplay = document.getElementById('propostaSubtotalDisplay');
+    const totalDisplay = document.getElementById('propostaTotalDisplay');
+    if(subtotalEl) subtotalEl.value = subtotal.toFixed(2);
+    if(totalEl) totalEl.value = subtotal.toFixed(2);
+    if(subtotalDisplay) subtotalDisplay.textContent = `R$ ${formatCurrencyBR(subtotal)}`;
+    if(totalDisplay) totalDisplay.textContent = `R$ ${formatCurrencyBR(subtotal)}`;
+    return subtotal;
+  }
+  function renderTabelaItensProposta(){
+    const tbody = document.querySelector('#propostaItensTable tbody');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    propostaItens.forEach((item, index) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <select class="proposta-item-mp" data-index="${index}">
+            <option value="" ${!item.mpId ? 'selected' : ''} disabled>Selecione a MP</option>
+            ${mpList.map(mp => `<option value="${escapeHTML(mp.id)}" ${item.mpId === mp.id ? 'selected' : ''}>${escapeHTML(mp.tipo || '')}</option>`).join('')}
+          </select>
+        </td>
+        <td><input type="text" class="proposta-item-descricao" data-index="${index}" value="${escapeHTML(item.descricao || '')}" readonly></td>
+        <td><input type="text" class="proposta-item-unidade" data-index="${index}" value="${escapeHTML(item.unidade || '')}" readonly></td>
+        <td><input type="number" class="proposta-item-preco-base" data-index="${index}" value="${Number(item.precoBase || 0).toFixed(2)}" step="0.01" min="0" readonly></td>
+        <td><input type="number" class="proposta-item-quantidade" data-index="${index}" value="${Number(item.quantidade || 0)}" step="0.01" min="0"></td>
+        <td><input type="number" class="proposta-item-preco-unitario" data-index="${index}" value="${Number(item.precoUnitario || 0).toFixed(2)}" step="0.01" min="0"></td>
+        <td class="proposal-line-total">R$ ${formatCurrencyBR(item.total || 0)}</td>
+        <td class="proposal-col-actions"><button type="button" class="btn-small red proposta-item-remover" data-index="${index}" title="Remover item"><span class="material-icons">delete</span></button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+    const selects = tbody.querySelectorAll('select');
+    if(selects.length && window.M) M.FormSelect.init(selects);
+    tbody.querySelectorAll('.proposta-item-mp').forEach(select => {
+      select.addEventListener('change', (e) => {
+        const index = Number(e.target.dataset.index);
+        const mp = mpList.find(x => x.id === e.target.value) || {};
+        const itemAtual = propostaItens[index] || {};
+        propostaItens[index] = normalizarItemProposta({
+          ...itemAtual,
+          mpId: mp.id || '',
+          descricao: mp.tipo || '',
+          unidade: mp.unidade || '',
+          precoBase: Number(mp.preco || 0),
+          quantidade: Number(itemAtual.quantidade || 0) > 0 ? itemAtual.quantidade : 1,
+          precoUnitario: Number(itemAtual.precoUnitario || 0) > 0 ? itemAtual.precoUnitario : Number(mp.preco || 0)
+        }, index);
+        renderTabelaItensProposta();
+      });
+    });
+    tbody.querySelectorAll('.proposta-item-quantidade, .proposta-item-preco-unitario').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const index = Number(e.target.dataset.index);
+        const campo = e.target.classList.contains('proposta-item-quantidade') ? 'quantidade' : 'precoUnitario';
+        propostaItens[index][campo] = Number(e.target.value) || 0;
+        atualizarTotaisProposta();
+        const totalCell = e.target.closest('tr').querySelector('.proposal-line-total');
+        if(totalCell) totalCell.textContent = `R$ ${formatCurrencyBR(propostaItens[index].total || 0)}`;
+      });
+    });
+    tbody.querySelectorAll('.proposta-item-remover').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        propostaItens.splice(Number(e.currentTarget.dataset.index), 1);
+        if(!propostaItens.length) propostaItens.push(normalizarItemProposta({ quantidade: 1, precoUnitario: 0 }, 0));
+        renderTabelaItensProposta();
+      });
+    });
+    atualizarTotaisProposta();
+  }
+  function adicionarItemProposta(){
+    propostaItens.push(normalizarItemProposta({ quantidade: 1, precoUnitario: 0 }, propostaItens.length));
+    renderTabelaItensProposta();
+  }
   function resetFormProposta(){
     document.getElementById('propostaEditId').value = '';
     document.getElementById('formProposta').reset();
-    document.getElementById('propostaTitulo').value = 'Proposta CIF';
+    document.getElementById('propostaTitulo').value = 'Proposta Comercial';
+    document.getElementById('propostaCondicaoFrete').value = 'Frete a combinar.';
     document.getElementById('propostaCondicaoPagamento').value = 'Boleto 7 e 28 dias.';
     document.getElementById('propostaValidade').value = 30;
     document.getElementById('propostaAssinatura').value = 'Fernando S. da Silva';
+    document.getElementById('propostaNumero').value = gerarNumeroProposta();
     const dataEl = document.getElementById('propostaData');
     if(dataEl) dataEl.value = formatDateToISO(new Date());
     const dadosBancariosEl = document.getElementById('propostaDadosBancarios');
     if(dadosBancariosEl) dadosBancariosEl.value = `NOME: CXPTEC ENGENHARIA\nESPEC.TECNOLOGIA DO CONCRETO;\nCNPJ: 61.785.230/0001-06 (PIX)`;
+    propostaItens = [normalizarItemProposta({ quantidade: 1, precoUnitario: 0 }, 0)];
+    preencherResumoClienteProposta('');
+    renderTabelaItensProposta();
     M.updateTextFields();
     M.FormSelect.init(document.getElementById('propostaCliente'));
   }
 
   resetFormProposta();
+  document.getElementById('propostaCliente').addEventListener('change', (e) => preencherResumoClienteProposta(e.target.value));
+  document.getElementById('btnAdicionarItemProposta').addEventListener('click', adicionarItemProposta);
 
   const btnSalvarProposta = document.getElementById('btnSalvarProposta');
   if(btnSalvarProposta){
     btnSalvarProposta.onclick = async function(){
       const editId = document.getElementById('propostaEditId').value || null;
       const clienteId = document.getElementById('propostaCliente').value;
-      const total = parseFloat(document.getElementById('propostaTotal').value);
       const dataRaw = document.getElementById('propostaData').value;
       if(!clienteId) return M.toast({html:'Selecione o cliente da proposta!'});
-      if(isNaN(total) || total <= 0) return M.toast({html:'Total da proposta deve ser maior que zero.'});
+      const itensValidos = propostaItens.map((item, index) => normalizarItemProposta(item, index)).filter(item => item.mpId && item.quantidade > 0 && item.precoUnitario >= 0);
+      if(!itensValidos.length) return M.toast({html:'Adicione pelo menos um item válido na proposta!'});
+      propostaItens = itensValidos;
+      const total = atualizarTotaisProposta();
+      if(isNaN(total) || total <= 0) return M.toast({html:'O total da proposta deve ser maior que zero.'});
       const dataProposta = dataRaw ? formatDateToDDMMYYYY(parseDateInputAsLocal(dataRaw)) : formatDateToDDMMYYYY(new Date());
       const obj = {
         clienteId,
+        numero: (document.getElementById('propostaNumero').value || gerarNumeroProposta()).trim(),
         data: dataProposta,
+        subtotal: total,
         total,
-        titulo: (document.getElementById('propostaTitulo').value || 'Proposta CIF').trim(),
+        titulo: (document.getElementById('propostaTitulo').value || 'Proposta Comercial').trim(),
+        clienteSnapshot: criarSnapshotCliente(clienteId),
+        itens: itensValidos.map((item, index) => {
+          const mp = mpList.find(x => x.id === item.mpId) || {};
+          const normalizado = normalizarItemProposta({
+            ...item,
+            descricao: mp.tipo || item.descricao,
+            unidade: mp.unidade || item.unidade,
+            precoBase: Number(mp.preco || item.precoBase || 0)
+          }, index);
+          return {
+            id: normalizado.id,
+            mpId: normalizado.mpId,
+            descricao: normalizado.descricao,
+            unidade: normalizado.unidade,
+            precoBase: Number(normalizado.precoBase || 0),
+            quantidade: Number(normalizado.quantidade || 0),
+            precoUnitario: Number(normalizado.precoUnitario || 0),
+            total: Number(normalizado.total || 0)
+          };
+        }),
+        condicaoFrete: (document.getElementById('propostaCondicaoFrete').value || '').trim(),
         condicaoPagamento: (document.getElementById('propostaCondicaoPagamento').value || '').trim(),
         validadeDias: Number(document.getElementById('propostaValidade').value) || 30,
         dadosBancarios: (document.getElementById('propostaDadosBancarios').value || '').trim(),
@@ -373,7 +554,7 @@ document.addEventListener('DOMContentLoaded', function () {
     XLSX.utils.book_append_sheet(wb, toSheet(pedidos.map(p => { const c = clientes.find(x=>x.id === p.clienteId) || {}; return { cliente: c.nome || "", documento: c.doc || "", produto: p.produto || "", kg: p.kg, precoKg: p.precoKg, custo: p.custo, dataPedido: p.dataPedido || "", vencimento: p.vencimento || "", status: p.status || "" }; }), ["cliente","documento","produto","kg","precoKg","custo","dataPedido","vencimento","status"]), "Pedidos");
     XLSX.utils.book_append_sheet(wb, toSheet(financeiro.map(f => ({ tipo: f.tipo, desc: f.desc, valor: f.valor, vencimento: f.vencimento })), ["tipo","desc","valor","vencimento"]), "Financeiro");
     XLSX.utils.book_append_sheet(wb, toSheet(servicos.map(s => { const c = clientes.find(x=>x.id === s.clienteId) || {}; return { cliente: c.nome || "", documento: c.doc || "", servico: s.desc || "", valor: s.valor || 0, parcelas: s.parcelas || 1, vencimentos: (s.vencimentos || []).join(' ; ') }; }), ["cliente","documento","servico","valor","parcelas","vencimentos"]), "Servicos");
-    XLSX.utils.book_append_sheet(wb, toSheet(propostas.map(p => { const c = clientes.find(x=>x.id === p.clienteId) || {}; return { data: p.data || "", cliente: c.nome || "", documento: c.doc || "", total: p.total || 0, titulo: p.titulo || "", condicaoPagamento: p.condicaoPagamento || "", validadeDias: p.validadeDias || 30 }; }), ["data","cliente","documento","total","titulo","condicaoPagamento","validadeDias"]), "Propostas");
+    XLSX.utils.book_append_sheet(wb, toSheet(propostas.map(p => { const c = clientes.find(x=>x.id === p.clienteId) || {}; return { numero: p.numero || "", data: p.data || "", cliente: (p.clienteSnapshot && p.clienteSnapshot.nome) || c.nome || "", documento: (p.clienteSnapshot && p.clienteSnapshot.doc) || c.doc || "", itens: Array.isArray(p.itens) ? p.itens.length : 0, total: p.total || 0, titulo: p.titulo || "", condicaoFrete: p.condicaoFrete || "", condicaoPagamento: p.condicaoPagamento || "", validadeDias: p.validadeDias || 30 }; }), ["numero","data","cliente","documento","itens","total","titulo","condicaoFrete","condicaoPagamento","validadeDias"]), "Propostas");
     XLSX.writeFile(wb, "controle_pedidos_firestore.xlsx");
   };
 
@@ -505,6 +686,9 @@ document.addEventListener('DOMContentLoaded', function () {
   function atualizarClientesUI(){
     const tbody = document.querySelector("#clientesTable tbody"); if(!tbody) return; tbody.innerHTML = "";
     const select = document.getElementById('pedidoCliente'); const servicoSelect = document.getElementById('servicoCliente'); const propostaSelect = document.getElementById('propostaCliente');
+    const currentPedido = select ? select.value : '';
+    const currentServico = servicoSelect ? servicoSelect.value : '';
+    const currentProposta = propostaSelect ? propostaSelect.value : '';
     if(select) select.innerHTML = '<option value="" disabled selected>Selecione o cliente</option>'; if(servicoSelect) servicoSelect.innerHTML = '<option value="" disabled selected>Selecione o cliente</option>'; if(propostaSelect) propostaSelect.innerHTML = '<option value="" disabled selected>Selecione o cliente</option>';
     clientes.forEach((c) => {
       const tr = document.createElement('tr');
@@ -518,7 +702,11 @@ document.addEventListener('DOMContentLoaded', function () {
       if(servicoSelect){ const option2 = document.createElement('option'); option2.value = c.id; option2.text = `${c.nome} (${c.doc || ""})`; servicoSelect.appendChild(option2); }
       if(propostaSelect){ const option3 = document.createElement('option'); option3.value = c.id; option3.text = `${c.nome} (${c.doc || ""})`; propostaSelect.appendChild(option3); }
     });
+    if(select && currentPedido) select.value = currentPedido;
+    if(servicoSelect && currentServico) servicoSelect.value = currentServico;
+    if(propostaSelect && currentProposta) propostaSelect.value = currentProposta;
     if(window.M) M.FormSelect.init(document.querySelectorAll('#pedidoCliente, #servicoCliente, #propostaCliente'));
+    preencherResumoClienteProposta(currentProposta || (propostaSelect ? propostaSelect.value : ''));
     reapplyAllFilters();
     scheduleDashboardUpdate();
   }
@@ -534,6 +722,8 @@ document.addEventListener('DOMContentLoaded', function () {
       const btnDel = document.createElement('button'); btnDel.className='btn-small red'; btnDel.innerHTML='<span class="material-icons">delete</span>'; btnDel.title='Excluir'; btnDel.onclick=()=> window.excluirMP(mp.id);
       tdActions.appendChild(btnEdit); tdActions.appendChild(btnInline); tdActions.appendChild(btnDel); tr.appendChild(tdActions); tbody.appendChild(tr);
     });
+    sincronizarItensPropostaComCadastro();
+    renderTabelaItensProposta();
     reapplyAllFilters();
   }
 
@@ -645,50 +835,118 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function renderPropostaHTML(proposta, cliente){
-    const enderecoCliente = [cliente.endereco || '', cliente.numero || '', cliente.complemento || ''].filter(Boolean).join(' - ');
+    const clienteDados = proposta.clienteSnapshot || cliente || {};
+    const enderecoCliente = getClienteEnderecoFormatado(clienteDados);
     const validade = Number(proposta.validadeDias) || 30;
+    const itens = Array.isArray(proposta.itens) ? proposta.itens.map((item, index) => normalizarItemProposta(item, index)) : [];
+    const subtotal = Number(proposta.subtotal || proposta.total || 0) || 0;
+    const total = Number(proposta.total || proposta.subtotal || 0) || 0;
     const dadosBancariosHtml = escapeHTML(proposta.dadosBancarios || '').replace(/\n/g, '<br>');
     const observacoesHtml = escapeHTML(proposta.observacoes || '').replace(/\n/g, '<br>');
+    const itensRows = itens.length ? itens.map((item) => `
+      <tr>
+        <td>${escapeHTML(item.descricao || '')}</td>
+        <td>${escapeHTML(item.unidade || '')}</td>
+        <td>${Number(item.quantidade || 0).toFixed(2).replace('.', ',')}</td>
+        <td>R$ ${formatCurrencyBR(item.precoUnitario || 0)}</td>
+        <td>R$ ${formatCurrencyBR(item.total || 0)}</td>
+      </tr>
+    `).join('') : '<tr><td colspan="5" style="text-align:center;color:#667;">Nenhum item informado.</td></tr>';
     return `<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
   <title>Proposta Comercial</title>
   <style>
-    body{font-family:Arial,sans-serif;padding:24px;color:#111;}
-    table{width:100%;border-collapse:collapse;margin-bottom:12px;}
-    th,td{border:1px solid #222;padding:8px;vertical-align:top;}
-    h2,h3{margin:0 0 10px 0;}
-    .btn-print{margin-bottom:12px;padding:8px 12px;cursor:pointer;}
+    *{box-sizing:border-box;}
+    body{font-family:Arial,sans-serif;padding:28px;color:#1d1d1d;background:#fff;}
+    table{width:100%;border-collapse:collapse;margin-bottom:18px;}
+    th,td{border:1px solid #d8e0e8;padding:10px 12px;vertical-align:top;font-size:13px;}
+    th{background:#f5f8fb;text-align:left;color:#28415a;}
+    h2,h3{margin:0;}
+    .btn-print{margin-bottom:18px;padding:10px 14px;cursor:pointer;border:1px solid #9fb3c7;background:#edf3f9;}
+    .proposal-shell{max-width:980px;margin:0 auto;}
+    .proposal-header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;border-bottom:2px solid #d8e0e8;padding-bottom:18px;margin-bottom:20px;}
+    .proposal-brand{max-width:60%;}
+    .proposal-brand-badge{display:inline-block;padding:6px 10px;border:1px solid #c6d3df;background:#f7fafc;font-size:11px;font-weight:700;letter-spacing:1px;color:#34516d;text-transform:uppercase;margin-bottom:10px;}
+    .proposal-brand p,.proposal-meta p,.proposal-notes p{margin:4px 0;}
+    .proposal-meta{min-width:250px;padding:14px;border:1px solid #d8e0e8;background:#fafcfe;}
+    .proposal-title{font-size:24px;color:#1b3956;margin-bottom:6px;}
+    .proposal-subtitle{font-size:12px;color:#5d7185;text-transform:uppercase;letter-spacing:.6px;}
+    .proposal-section-title{font-size:14px;color:#1d3b58;margin:0 0 10px 0;text-transform:uppercase;letter-spacing:.6px;}
+    .proposal-summary{width:320px;margin-left:auto;}
+    .proposal-summary td{font-weight:700;}
+    .proposal-summary .highlight{font-size:16px;color:#12314b;background:#f4f8fc;}
+    .proposal-notes,.proposal-bank,.proposal-signature{border:1px solid #d8e0e8;padding:14px;background:#fff;margin-top:16px;}
+    .proposal-signature{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;}
+    .muted{color:#627487;}
     @media print {.btn-print{display:none;}}
   </style>
 </head>
 <body>
-  <button class="btn-print" onclick="window.print()">Imprimir proposta</button>
-  <h2>Proposta Comercial</h2>
-  <table>
-    <tr><th>Cliente</th><td>${escapeHTML(cliente.nome || '')}</td><th>Documento</th><td>${escapeHTML(cliente.doc || '')}</td></tr>
-    <tr><th>Telefone</th><td>${escapeHTML(cliente.tel || '')}</td><th>E-mail</th><td>${escapeHTML(cliente.email || '')}</td></tr>
-    <tr><th>Endereço</th><td colspan="3">${escapeHTML(enderecoCliente)}</td></tr>
-  </table>
-  <table>
-    <tr><th style="width:25%;">Data</th><td>${escapeHTML(proposta.data || '')}</td><th style="width:25%;">Total da proposta</th><td>R$ ${formatCurrencyBR(proposta.total || 0)}</td></tr>
-  </table>
-  <h3>Condições comerciais</h3>
-  <table>
-    <tr><td><strong>${escapeHTML(proposta.titulo || 'Proposta CIF')}</strong><br>Condição de pagamento:<br>${escapeHTML(proposta.condicaoPagamento || '')}</td></tr>
-  </table>
-  <h3>Dados bancários</h3>
-  <table>
-    <tr><td>${dadosBancariosHtml}</td></tr>
-  </table>
-  <h3>Condições gerais</h3>
-  <table>
-    <tr><th style="width:70%;">Validade da proposta</th><td>${validade} dias</td></tr>
-  </table>
-  ${proposta.observacoes ? `<h3>Observações</h3><table><tr><td>${observacoesHtml}</td></tr></table>` : ''}
-  <p>Atenciosamente,</p>
-  <p>${escapeHTML(proposta.assinatura || '')}</p>
+  <div class="proposal-shell">
+    <button class="btn-print" onclick="window.print()">Imprimir proposta</button>
+    <div class="proposal-header">
+      <div class="proposal-brand">
+        <div class="proposal-brand-badge">CXPTEC Engenharia</div>
+        <div class="proposal-title">${escapeHTML(proposta.titulo || 'Proposta Comercial')}</div>
+        <div class="proposal-subtitle">Especialistas em tecnologia do concreto</div>
+        <p><strong>CNPJ:</strong> 61.785.230/0001-06</p>
+        <p class="muted">Documento comercial preparado com base nos dados cadastrados no sistema.</p>
+      </div>
+      <div class="proposal-meta">
+        <p><strong>Número:</strong> ${escapeHTML(proposta.numero || '—')}</p>
+        <p><strong>Data:</strong> ${escapeHTML(proposta.data || '')}</p>
+        <p><strong>Validade:</strong> ${validade} dias</p>
+        <p><strong>Pagamento:</strong> ${escapeHTML(proposta.condicaoPagamento || '—')}</p>
+        <p><strong>Frete:</strong> ${escapeHTML(proposta.condicaoFrete || '—')}</p>
+      </div>
+    </div>
+
+    <h3 class="proposal-section-title">Dados do cliente</h3>
+    <table>
+      <tr><th style="width:18%;">Cliente</th><td>${escapeHTML(clienteDados.nome || '')}</td><th style="width:18%;">Documento</th><td>${escapeHTML(clienteDados.doc || '')}</td></tr>
+      <tr><th>Telefone</th><td>${escapeHTML(clienteDados.tel || '')}</td><th>E-mail</th><td>${escapeHTML(clienteDados.email || '')}</td></tr>
+      <tr><th>Endereço</th><td colspan="3">${escapeHTML(enderecoCliente || 'Não informado')}</td></tr>
+    </table>
+
+    <h3 class="proposal-section-title">Itens da proposta</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Unidade</th>
+          <th>Quantidade</th>
+          <th>Preço unitário</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>${itensRows}</tbody>
+    </table>
+
+    <table class="proposal-summary">
+      <tr><td>Subtotal</td><td>R$ ${formatCurrencyBR(subtotal)}</td></tr>
+      <tr><td>Total geral</td><td class="highlight">R$ ${formatCurrencyBR(total)}</td></tr>
+    </table>
+
+    <table>
+      <tr><th style="width:30%;">Condição de frete</th><td>${escapeHTML(proposta.condicaoFrete || '—')}</td></tr>
+      <tr><th>Condição de pagamento</th><td>${escapeHTML(proposta.condicaoPagamento || '—')}</td></tr>
+    </table>
+
+    <div class="proposal-bank">
+      <h3 class="proposal-section-title">Dados bancários</h3>
+      <p>${dadosBancariosHtml}</p>
+    </div>
+    ${proposta.observacoes ? `<div class="proposal-notes"><h3 class="proposal-section-title">Observações</h3><p>${observacoesHtml}</p></div>` : ''}
+    <div class="proposal-signature">
+      <div>
+        <h3 class="proposal-section-title">Atenciosamente</h3>
+        <p>${escapeHTML(proposta.assinatura || '')}</p>
+      </div>
+      <div class="muted">Proposta gerada em layout clean para apresentação comercial.</div>
+    </div>
+  </div>
 </body>
 </html>`;
   }
@@ -697,8 +955,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const tbody = document.querySelector('#propostasTable tbody'); if(!tbody) return; tbody.innerHTML = "";
     propostas.forEach((p) => {
       const c = clientes.find(x => x.id === p.clienteId) || {};
+      const itensCount = Array.isArray(p.itens) ? p.itens.length : 0;
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${escapeHTML(p.data || '')}</td><td>${escapeHTML(c.nome || '')}</td><td>R$ ${formatCurrencyBR(p.total || 0)}</td><td>${escapeHTML(p.condicaoPagamento || '')}</td><td>${Number(p.validadeDias || 30)} dias</td>`;
+      tr.innerHTML = `<td>${escapeHTML(p.numero || '')}</td><td>${escapeHTML(p.data || '')}</td><td>${escapeHTML((p.clienteSnapshot && p.clienteSnapshot.nome) || c.nome || '')}</td><td>${itensCount}</td><td>R$ ${formatCurrencyBR(p.total || 0)}</td><td>${escapeHTML(p.condicaoPagamento || '')}</td>`;
       const tdActions = document.createElement('td');
       const btnEdit = document.createElement('button'); btnEdit.className='btn-small orange small-action'; btnEdit.title='Editar proposta'; btnEdit.innerHTML='<span class="material-icons">edit</span>'; btnEdit.onclick=()=> window.editarProposta(p.id);
       const btnView = document.createElement('button'); btnView.className='btn-small blue small-action'; btnView.title='Visualizar/Imprimir'; btnView.innerHTML='<span class="material-icons">visibility</span>'; btnView.onclick=()=> window.visualizarProposta(p.id);
@@ -713,13 +972,19 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('propostaEditId').value = p.id;
     document.getElementById('propostaCliente').value = p.clienteId || '';
     document.getElementById('propostaData').value = p.data ? (() => { const parts = String(p.data).split('/'); return (parts.length===3) ? `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}` : formatDateToISO(new Date()); })() : formatDateToISO(new Date());
-    document.getElementById('propostaTotal').value = Number(p.total || 0);
-    document.getElementById('propostaTitulo').value = p.titulo || 'Proposta CIF';
+    document.getElementById('propostaNumero').value = p.numero || gerarNumeroProposta();
+    document.getElementById('propostaTitulo').value = p.titulo || 'Proposta Comercial';
+    document.getElementById('propostaCondicaoFrete').value = p.condicaoFrete || '';
     document.getElementById('propostaCondicaoPagamento').value = p.condicaoPagamento || '';
     document.getElementById('propostaValidade').value = Number(p.validadeDias || 30);
+    document.getElementById('propostaSubtotal').value = Number(p.subtotal || p.total || 0).toFixed(2);
+    document.getElementById('propostaTotal').value = Number(p.total || 0).toFixed(2);
     document.getElementById('propostaDadosBancarios').value = p.dadosBancarios || '';
     document.getElementById('propostaObservacoes').value = p.observacoes || '';
     document.getElementById('propostaAssinatura').value = p.assinatura || '';
+    propostaItens = Array.isArray(p.itens) && p.itens.length ? p.itens.map((item, index) => normalizarItemProposta(item, index)) : [normalizarItemProposta({ quantidade: 1, precoUnitario: 0 }, 0)];
+    preencherResumoClienteProposta(p.clienteId || '');
+    renderTabelaItensProposta();
     M.updateTextFields();
     M.FormSelect.init(document.getElementById('propostaCliente'));
     document.getElementById('sectionPropostas').scrollIntoView({behavior:'smooth', block:'start'});
