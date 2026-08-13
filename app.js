@@ -364,6 +364,12 @@ document.addEventListener('DOMContentLoaded', function () {
   function renderTabelaItensProposta(){
     const tbody = document.querySelector('#propostaItensTable tbody');
     if(!tbody) return;
+    tbody.querySelectorAll('select').forEach(sel => {
+      try {
+        const inst = window.M && M.FormSelect.getInstance(sel);
+        if(inst) inst.destroy();
+      } catch(e) { console.warn('FormSelect destroy error', e); }
+    });
     tbody.innerHTML = '';
     if(!propostaItens.length){
       const trEmpty = document.createElement('tr');
@@ -449,6 +455,8 @@ document.addEventListener('DOMContentLoaded', function () {
     preencherResumoClienteProposta('');
     renderTabelaItensProposta();
     M.updateTextFields();
+    const _pcInst = M.FormSelect.getInstance(document.getElementById('propostaCliente'));
+    if(_pcInst) _pcInst.destroy();
     M.FormSelect.init(document.getElementById('propostaCliente'));
   }
 
@@ -716,7 +724,13 @@ document.addEventListener('DOMContentLoaded', function () {
     if(select && currentPedido) select.value = currentPedido;
     if(servicoSelect && currentServico) servicoSelect.value = currentServico;
     if(propostaSelect && currentProposta) propostaSelect.value = currentProposta;
-    if(window.M) M.FormSelect.init(document.querySelectorAll('#pedidoCliente, #servicoCliente, #propostaCliente'));
+    if(window.M){
+      [select, servicoSelect, propostaSelect].forEach(sel => {
+        if(!sel) return;
+        try { const inst = M.FormSelect.getInstance(sel); if(inst) inst.destroy(); } catch(e) {}
+      });
+      M.FormSelect.init(document.querySelectorAll('#pedidoCliente, #servicoCliente, #propostaCliente'));
+    }
     preencherResumoClienteProposta(currentProposta || '');
     reapplyAllFilters();
     scheduleDashboardUpdate();
@@ -997,6 +1011,8 @@ document.addEventListener('DOMContentLoaded', function () {
     preencherResumoClienteProposta(p.clienteId || '');
     renderTabelaItensProposta();
     M.updateTextFields();
+    const _pcInst2 = M.FormSelect.getInstance(document.getElementById('propostaCliente'));
+    if(_pcInst2) _pcInst2.destroy();
     M.FormSelect.init(document.getElementById('propostaCliente'));
     document.getElementById('sectionPropostas').scrollIntoView({behavior:'smooth', block:'start'});
   };
