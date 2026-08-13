@@ -60,6 +60,7 @@
       <li data-target="formCadastroMP"><span class="item-icon"><span class="material-icons">category</span></span><span>Cadastro de Produto (MP)</span></li>
       <li data-target="formPedidoSection"><span class="item-icon"><span class="material-icons">post_add</span></span><span>Novo Pedido</span></li>
       <li data-target="formServico"><span class="item-icon"><span class="material-icons">engineering</span></span><span>Prestação de Serviço</span></li>
+      <li data-target="sectionPropostas"><span class="item-icon"><span class="material-icons">description</span></span><span>Proposta Comercial</span></li>
       <li data-target="financeiroTable"><span class="item-icon"><span class="material-icons">attach_money</span></span><span>Financeiro</span></li>
       <li data-target="pedidosTable"><span class="item-icon"><span class="material-icons">assignment</span></span><span>Pedidos</span></li>
     </ul>
@@ -300,6 +301,43 @@
         <thead><tr><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Parcelas</th><th>Vencimentos</th><th data-no-filter>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
+    </div>
+
+    <div id="sectionPropostas">
+      <div class="section-h">Proposta Comercial</div>
+      <form id="formProposta" class="card-panel z-depth-1">
+        <input type="hidden" id="propostaEditId" value="">
+        <div class="row">
+          <div class="input-field col s12 m6"><select id="propostaCliente"><option value="" disabled selected>Selecione o cliente</option></select><label for="propostaCliente">Cliente</label></div>
+          <div class="input-field col s6 m3"><input id="propostaData" type="date"><label for="propostaData" class="active">Data</label></div>
+          <div class="input-field col s6 m3"><input id="propostaTotal" type="number" step="0.01" min="0"><label for="propostaTotal">Total da proposta (R$)</label></div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12 m4"><input id="propostaTitulo" type="text" value="Proposta CIF"><label for="propostaTitulo" class="active">Título da proposta</label></div>
+          <div class="input-field col s12 m4"><input id="propostaCondicaoPagamento" type="text" value="Boleto 7 e 28 dias."><label for="propostaCondicaoPagamento" class="active">Condição de pagamento</label></div>
+          <div class="input-field col s12 m4"><input id="propostaValidade" type="number" min="1" value="30"><label for="propostaValidade" class="active">Validade da proposta (dias)</label></div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12"><textarea id="propostaDadosBancarios" class="materialize-textarea" readonly>NOME: CXPTEC ENGENHARIA
+ESPEC.TECNOLOGIA DO CONCRETO;
+CNPJ: 61.785.230/0001-06 (PIX)</textarea><label for="propostaDadosBancarios" class="active">Dados bancários (fixo)</label></div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12"><textarea id="propostaObservacoes" class="materialize-textarea" placeholder="Informações adicionais da proposta..."></textarea><label for="propostaObservacoes">Observações</label></div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12 m6"><input id="propostaAssinatura" type="text" value="Fernando S. da Silva"><label for="propostaAssinatura" class="active">Assinatura</label></div>
+        </div>
+        <button class="btn blue" type="button" id="btnSalvarProposta" style="width:100%;margin-top:10px;"><span class="material-icons left">save</span>Salvar Proposta</button>
+      </form>
+
+      <div class="section-h">Propostas Salvas</div>
+      <div class="scroll-table">
+        <table class="highlight responsive-table" id="propostasTable">
+          <thead><tr><th>Data</th><th>Cliente</th><th>Total</th><th>Condição de pagamento</th><th>Validade</th><th data-no-filter>Ações</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
 
     <div class="section-h">Financeiro</div>
