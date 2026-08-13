@@ -464,6 +464,46 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('propostaCliente').addEventListener('change', (e) => preencherResumoClienteProposta(e.target.value));
   document.getElementById('btnAdicionarItemProposta').addEventListener('click', adicionarItemProposta);
 
+  // ====== CONFIGURAÇÕES DA EMPRESA ======
+  (function initEmpresaConfig(){
+    const DEFAULT_EMPRESA = { nome: 'CXPTEC ENGENHARIA', cnpj: '61.785.230/0001-06', endereco: '', cidade: '', cep: '' };
+    function loadEmpresaConfig(){
+      try{ return JSON.parse(localStorage.getItem('proposta_empresa') || 'null') || DEFAULT_EMPRESA; }catch(e){ return DEFAULT_EMPRESA; }
+    }
+    function saveEmpresaConfig(data){ localStorage.setItem('proposta_empresa', JSON.stringify(data)); }
+    function renderLogoPreview(){
+      const preview = document.getElementById('empresaLogoPreview'); if(!preview) return;
+      const logo = localStorage.getItem('proposta_logo');
+      preview.innerHTML = logo ? `<img src="${logo}" style="max-height:70px;max-width:200px;border:1px solid #ccc;padding:4px;" alt="Logo">` : '<span style="color:#999;font-size:12px;">Nenhum logo cadastrado</span>';
+    }
+    const cfg = loadEmpresaConfig();
+    const flds = ['Nome','CNPJ','Endereco','Cidade','CEP'];
+    flds.forEach(f => { const el = document.getElementById('empresa'+f); if(el) el.value = cfg[f.toLowerCase() === 'cnpj' ? 'cnpj' : f.toLowerCase() === 'endereco' ? 'endereco' : f.toLowerCase() === 'cidade' ? 'cidade' : f.toLowerCase() === 'cep' ? 'cep' : 'nome'] || ''; });
+    renderLogoPreview();
+    const btnSalvar = document.getElementById('btnSalvarEmpresaConfig');
+    if(btnSalvar) btnSalvar.onclick = function(){
+      saveEmpresaConfig({
+        nome: (document.getElementById('empresaNome')||{}).value || '',
+        cnpj: (document.getElementById('empresaCNPJ')||{}).value || '',
+        endereco: (document.getElementById('empresaEndereco')||{}).value || '',
+        cidade: (document.getElementById('empresaCidade')||{}).value || '',
+        cep: (document.getElementById('empresaCEP')||{}).value || ''
+      });
+      M.toast({html:'Configurações da empresa salvas!', classes:'green'});
+    };
+    const inputLogo = document.getElementById('empresaLogoInput');
+    if(inputLogo) inputLogo.onchange = function(e){
+      const file = e.target.files && e.target.files[0]; if(!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev){ localStorage.setItem('proposta_logo', ev.target.result); renderLogoPreview(); M.toast({html:'Logo salvo!', classes:'green'}); };
+      reader.readAsDataURL(file);
+    };
+    const btnRemoverLogo = document.getElementById('btnRemoverLogo');
+    if(btnRemoverLogo) btnRemoverLogo.onclick = function(){ localStorage.removeItem('proposta_logo'); renderLogoPreview(); M.toast({html:'Logo removido.'}); };
+  })();
+
+
+
   const btnSalvarProposta = document.getElementById('btnSalvarProposta');
   if(btnSalvarProposta){
     btnSalvarProposta.onclick = async function(){
@@ -859,6 +899,9 @@ document.addEventListener('DOMContentLoaded', function () {
     checkVencimentosServicos7dias(); reapplyAllFilters();
   }
 
+  function getEmpresaConfig(){
+    try{ return JSON.parse(localStorage.getItem('proposta_empresa') || 'null') || {}; }catch(e){ return {}; }
+  }
   function renderPropostaHTML(proposta, cliente){
     const clienteDados = proposta.clienteSnapshot || cliente || {};
     const enderecoCliente = getClienteEnderecoFormatado(clienteDados);
@@ -868,6 +911,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const total = Number(proposta.total || proposta.subtotal || 0) || 0;
     const dadosBancariosHtml = escapeHTML(proposta.dadosBancarios || '').replace(/\n/g, '<br>');
     const observacoesHtml = escapeHTML(proposta.observacoes || '').replace(/\n/g, '<br>');
+    const empresa = getEmpresaConfig();
+    const empresaNome = empresa.nome || 'CXPTEC ENGENHARIA';
+    const empresaCNPJ = empresa.cnpj || '61.785.230/0001-06';
+    const empresaEndereco = empresa.endereco || '';
+    const empresaCidade = empresa.cidade || '';
+    const empresaCEP = empresa.cep || '';
+    const logoDataUrl = localStorage.getItem('proposta_logo') || '';
     const itensRows = itens.length ? itens.map((item) => `
       <tr>
         <td>${escapeHTML(item.descricao || '')}</td>
@@ -884,56 +934,67 @@ document.addEventListener('DOMContentLoaded', function () {
   <title>Proposta Comercial</title>
   <style>
     *{box-sizing:border-box;}
-    body{font-family:Arial,sans-serif;padding:28px;color:#1d1d1d;background:#fff;}
-    table{width:100%;border-collapse:collapse;margin-bottom:18px;}
-    th,td{border:1px solid #d8e0e8;padding:10px 12px;vertical-align:top;font-size:13px;}
+    body{font-family:Arial,sans-serif;padding:22px 28px;color:#1d1d1d;background:#fff;font-size:12px;}
+    table{width:100%;border-collapse:collapse;margin-bottom:12px;}
+    th,td{border:1px solid #d0d8e0;padding:6px 10px;vertical-align:top;font-size:12px;}
     th{background:#f5f8fb;text-align:left;color:#28415a;}
     h2,h3{margin:0;}
-    .btn-print{margin-bottom:18px;padding:10px 14px;cursor:pointer;border:1px solid #9fb3c7;background:#edf3f9;}
-    .proposal-shell{max-width:980px;margin:0 auto;}
-    .proposal-header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;border-bottom:2px solid #d8e0e8;padding-bottom:18px;margin-bottom:20px;}
-    .proposal-brand{max-width:60%;}
-    .proposal-brand-badge{display:inline-block;padding:6px 10px;border:1px solid #c6d3df;background:#f7fafc;font-size:11px;font-weight:700;letter-spacing:1px;color:#34516d;text-transform:uppercase;margin-bottom:10px;}
-    .proposal-brand p,.proposal-meta p,.proposal-notes p{margin:4px 0;}
-    .proposal-meta{min-width:250px;padding:14px;border:1px solid #d8e0e8;background:#fafcfe;}
-    .proposal-title{font-size:24px;color:#1b3956;margin-bottom:6px;}
-    .proposal-subtitle{font-size:12px;color:#5d7185;text-transform:uppercase;letter-spacing:.6px;}
-    .proposal-section-title{font-size:14px;color:#1d3b58;margin:0 0 10px 0;text-transform:uppercase;letter-spacing:.6px;}
-    .proposal-summary{width:320px;margin-left:auto;}
+    .btn-print{margin-bottom:12px;padding:7px 14px;cursor:pointer;border:1px solid #9fb3c7;background:#edf3f9;font-size:12px;}
+    .proposal-shell{max-width:900px;margin:0 auto;}
+    .proposal-topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+    .proposal-logo-area{min-width:140px;max-width:190px;}
+    .proposal-logo-area img{max-width:180px;max-height:75px;object-fit:contain;}
+    .proposal-company-info{text-align:right;font-size:10.5px;line-height:1.65;color:#1d1d1d;}
+    .proposal-company-name{font-weight:700;font-size:10.5px;}
+    .proposal-divider{border:none;border-top:1px solid #aaa;margin:10px 0;}
+    .proposal-title-block{text-align:center;font-size:13px;font-weight:700;margin:12px 0 14px;}
+    .proposal-client-block{border-left:3px solid #333;padding:2px 0 2px 12px;margin-bottom:14px;font-size:12px;}
+    .proposal-client-label{font-weight:700;margin-bottom:3px;}
+    .proposal-meta-row{display:flex;gap:28px;font-size:11px;margin-bottom:14px;color:#444;}
+    .proposal-section-title{font-size:11.5px;color:#1d3b58;margin:0 0 7px 0;text-transform:uppercase;letter-spacing:.5px;font-weight:700;}
+    .proposal-summary{width:280px;margin-left:auto;}
     .proposal-summary td{font-weight:700;}
-    .proposal-summary .highlight{font-size:16px;color:#12314b;background:#f4f8fc;}
-    .proposal-notes,.proposal-bank,.proposal-signature{border:1px solid #d8e0e8;padding:14px;background:#fff;margin-top:16px;}
+    .proposal-summary .highlight{font-size:13px;color:#12314b;background:#f4f8fc;}
+    .proposal-notes,.proposal-bank,.proposal-signature{border:1px solid #d8e0e8;padding:10px 12px;background:#fff;margin-top:10px;}
     .proposal-signature{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;}
     .muted{color:#627487;}
-    @media print {.btn-print{display:none;}}
+    @media print{.btn-print{display:none;}body{padding:12px 18px;}}
   </style>
 </head>
 <body>
   <div class="proposal-shell">
     <button class="btn-print" onclick="window.print()">Imprimir proposta</button>
-    <div class="proposal-header">
-      <div class="proposal-brand">
-        <div class="proposal-brand-badge">CXPTEC Engenharia</div>
-        <div class="proposal-title">${escapeHTML(proposta.titulo || 'Proposta Comercial')}</div>
-        <div class="proposal-subtitle">Especialistas em tecnologia do concreto</div>
-        <p><strong>CNPJ:</strong> 61.785.230/0001-06</p>
-        <p class="muted">Documento comercial preparado com base nos dados cadastrados no sistema.</p>
-      </div>
-      <div class="proposal-meta">
-        <p><strong>Número:</strong> ${escapeHTML(proposta.numero || '—')}</p>
-        <p><strong>Data:</strong> ${escapeHTML(proposta.data || '')}</p>
-        <p><strong>Validade:</strong> ${validade} dias</p>
-        <p><strong>Pagamento:</strong> ${escapeHTML(proposta.condicaoPagamento || '—')}</p>
-        <p><strong>Frete:</strong> ${escapeHTML(proposta.condicaoFrete || '—')}</p>
+
+    <div class="proposal-topbar">
+      <div class="proposal-logo-area">${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo da empresa">` : ''}</div>
+      <div class="proposal-company-info">
+        <div class="proposal-company-name">${escapeHTML(empresaNome)}</div>
+        <div>${escapeHTML(empresaCNPJ)}</div>
+        ${empresaEndereco ? `<div>${escapeHTML(empresaEndereco)}</div>` : ''}
+        ${empresaNome && empresaEndereco ? `<div>${escapeHTML(empresaNome)}</div>` : ''}
+        ${empresaCidade ? `<div>${escapeHTML(empresaCidade)}</div>` : ''}
+        ${empresaCEP ? `<div>${escapeHTML(empresaCEP)}</div>` : ''}
       </div>
     </div>
 
-    <h3 class="proposal-section-title">Dados do cliente</h3>
-    <table>
-      <tr><th style="width:18%;">Cliente</th><td>${escapeHTML(clienteDados.nome || '')}</td><th style="width:18%;">Documento</th><td>${escapeHTML(clienteDados.doc || '')}</td></tr>
-      <tr><th>Telefone</th><td>${escapeHTML(clienteDados.tel || '')}</td><th>E-mail</th><td>${escapeHTML(clienteDados.email || '')}</td></tr>
-      <tr><th>Endereço</th><td colspan="3">${escapeHTML(enderecoCliente || 'Não informado')}</td></tr>
-    </table>
+    <hr class="proposal-divider">
+
+    <div class="proposal-title-block">${escapeHTML(proposta.titulo || 'Proposta Comercial')} Nº ${escapeHTML(proposta.numero || '—')}</div>
+
+    <div class="proposal-client-block">
+      <div class="proposal-client-label">Para</div>
+      <div>${escapeHTML(clienteDados.nome || '')}</div>
+      ${clienteDados.doc ? `<div>${escapeHTML(clienteDados.doc)}</div>` : ''}
+      ${clienteDados.tel ? `<div>${escapeHTML(clienteDados.tel)}</div>` : ''}
+      ${enderecoCliente ? `<div>${escapeHTML(enderecoCliente)}</div>` : ''}
+    </div>
+
+    <div class="proposal-meta-row">
+      <span><strong>Data:</strong> ${escapeHTML(proposta.data || '—')}</span>
+      <span><strong>Validade:</strong> ${validade} dias</span>
+      <span><strong>Pagamento:</strong> ${escapeHTML(proposta.condicaoPagamento || '—')}</span>
+      <span><strong>Frete:</strong> ${escapeHTML(proposta.condicaoFrete || '—')}</span>
+    </div>
 
     <h3 class="proposal-section-title">Itens da proposta</h3>
     <table>
@@ -954,11 +1015,6 @@ document.addEventListener('DOMContentLoaded', function () {
       <tr><td>Total geral</td><td class="highlight">R$ ${formatCurrencyBR(total)}</td></tr>
     </table>
 
-    <table>
-      <tr><th style="width:30%;">Condição de frete</th><td>${escapeHTML(proposta.condicaoFrete || '—')}</td></tr>
-      <tr><th>Condição de pagamento</th><td>${escapeHTML(proposta.condicaoPagamento || '—')}</td></tr>
-    </table>
-
     <div class="proposal-bank">
       <h3 class="proposal-section-title">Dados bancários</h3>
       <p>${dadosBancariosHtml}</p>
@@ -969,7 +1025,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <h3 class="proposal-section-title">Atenciosamente</h3>
         <p>${escapeHTML(proposta.assinatura || '')}</p>
       </div>
-      <div class="muted">Proposta gerada em layout clean para apresentação comercial.</div>
+      <div class="muted" style="font-size:11px;">Proposta gerada em ${escapeHTML(proposta.data || '')}.</div>
     </div>
   </div>
 </body>
