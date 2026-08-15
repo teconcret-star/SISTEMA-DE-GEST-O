@@ -1100,10 +1100,15 @@ document.addEventListener('DOMContentLoaded', function () {
   window.calcularResumoMes = function(month, year) {
     let totalEntrada = 0;
     let totalSaida = 0;
-    let saldoMesAnterior = 0;
+    let saldoAcumuladoAnterior = 0;
+    let entradaMesAnterior = 0;
+    let saidaMesAnterior = 0;
+
+    const prevMonth = month === 0 ? 11 : month - 1;
+    const prevYear  = month === 0 ? year - 1 : year;
+
     financeiro.forEach(m => {
       const dataEvento = getFinanceiroEventDate(m);
-      
       if (!dataEvento) return;
       const valor = Number(m.valor) || 0;
       const isEntrada = String(m.tipo).toLowerCase() === 'entrada';
@@ -1114,16 +1119,35 @@ document.addEventListener('DOMContentLoaded', function () {
         if(isEntrada) totalEntrada += valor;
         else totalSaida += valor;
       } else if (anoEvento < year || (anoEvento === year && mesEvento < month)) {
-        saldoMesAnterior += isEntrada ? valor : -valor;
+        saldoAcumuladoAnterior += isEntrada ? valor : -valor;
+        if (mesEvento === prevMonth && anoEvento === prevYear) {
+          if(isEntrada) entradaMesAnterior += valor;
+          else saidaMesAnterior += valor;
+        }
       }
     });
-    const saldoCaixaMes = saldoMesAnterior + (totalEntrada - totalSaida);
+
+    const saldoCaixaMes = saldoAcumuladoAnterior + (totalEntrada - totalSaida);
+    const saldoMes = totalEntrada - totalSaida;
+    const resultadoMesAnterior = entradaMesAnterior - saidaMesAnterior;
+
     const elEntrada = document.getElementById('somaEntradasMes');
     const elSaida = document.getElementById('somaSaidasMes');
     const elCaixa = document.getElementById('saldoCaixaMes');
+    const elSaldoMes = document.getElementById('saldoMes');
+    const elMesAnt = document.getElementById('saldoMesAnteriorCard');
+
     if(elEntrada) elEntrada.innerText = formatCurrencyBRL(totalEntrada);
     if(elSaida) elSaida.innerText = formatCurrencyBRL(totalSaida);
     if(elCaixa) elCaixa.innerText = formatCurrencyBRL(saldoCaixaMes);
+    if(elSaldoMes){
+      elSaldoMes.innerText = formatCurrencyBRL(saldoMes);
+      elSaldoMes.style.color = saldoMes >= 0 ? '#2e7d32' : '#c62828';
+    }
+    if(elMesAnt){
+      elMesAnt.innerText = formatCurrencyBRL(resultadoMesAnterior);
+      elMesAnt.style.color = resultadoMesAnterior >= 0 ? '#2e7d32' : '#c62828';
+    }
   };
 
   let financeiroCalendar = null;
