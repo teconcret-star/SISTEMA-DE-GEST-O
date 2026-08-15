@@ -294,6 +294,7 @@ document.addEventListener('DOMContentLoaded', function () {
   renderServicosVencimentos();
 
   let propostaItens = [];
+  let propostaTipo = 'produto';
   let propostaItemCounter = 0;
   function gerarIdItemProposta(){
     propostaItemCounter += 1;
@@ -350,7 +351,45 @@ document.addEventListener('DOMContentLoaded', function () {
       total: Number(item.total) || (quantidade * precoUnitario)
     };
   }
+  function normalizarItemPropostaServico(item = {}, index = 0){
+    const svc = cadServicos.find(x => x.id === item.cadServicoId) || {};
+    const precoBase = Number(item.precoBase !== undefined ? item.precoBase : (svc.valor || 0)) || 0;
+    const quantidade = Number(item.quantidade !== undefined ? item.quantidade : (item.qtd || 0)) || 0;
+    const precoUnitarioRaw = item.precoUnitario !== undefined ? item.precoUnitario : (item.precoBase || svc.valor || 0);
+    const precoUnitario = Number(precoUnitarioRaw) || 0;
+    return {
+      id: item.id || gerarIdItemProposta(),
+      cadServicoId: item.cadServicoId || '',
+      descricao: item.descricao || svc.tipo || '',
+      unidade: item.unidade || svc.unidade || '',
+      precoBase,
+      quantidade,
+      precoUnitario,
+      total: Number(item.total) || (quantidade * precoUnitario)
+    };
+  }
+  function atualizarBotoesTipoProposta(){
+    const btnProd = document.getElementById('btnTipoProduto');
+    const btnServ = document.getElementById('btnTipoServico');
+    if(!btnProd || !btnServ) return;
+    if(propostaTipo === 'servico'){
+      btnProd.className = 'btn grey btn-small';
+      btnServ.className = 'btn blue btn-small';
+    } else {
+      btnProd.className = 'btn blue btn-small';
+      btnServ.className = 'btn grey btn-small';
+    }
+    const hint = document.getElementById('propostaItensHint');
+    if(hint) hint.textContent = propostaTipo === 'servico'
+      ? 'Selecione serviços cadastrados, ajuste quantidade e preço unitário manualmente.'
+      : 'Selecione MPs cadastradas, ajuste quantidade e preço unitário manualmente.';
+    const th = document.getElementById('propostaThItem');
+    if(th) th.textContent = propostaTipo === 'servico' ? 'Item / Serviço' : 'Item / MP';
+    const tipoEl = document.getElementById('propostaTipo');
+    if(tipoEl) tipoEl.value = propostaTipo;
+  }
   function sincronizarItensPropostaComCadastro(){
+    if(propostaTipo === 'servico') return;
     propostaItens = propostaItens.map((item, index) => {
       const mp = mpList.find(x => x.id === item.mpId);
       if(!mp) return normalizarItemProposta(item, index);
@@ -366,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function atualizarTotaisProposta(){
     let subtotal = 0;
     propostaItens = propostaItens.map((item, index) => {
-      const normalizado = normalizarItemProposta(item, index);
+      const normalizado = propostaTipo === 'servico' ? normalizarItemPropostaServico(item, index) : normalizarItemProposta(item, index);
       normalizado.total = (Number(normalizado.quantidade) || 0) * (Number(normalizado.precoUnitario) || 0);
       subtotal += normalizado.total;
       return normalizado;
@@ -398,15 +437,20 @@ document.addEventListener('DOMContentLoaded', function () {
       atualizarTotaisProposta();
       return;
     }
+    const isServico = propostaTipo === 'servico';
     propostaItens.forEach((item, index) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>
-          <select class="proposta-item-mp" data-index="${index}">
+      const dropdownHtml = isServico
+        ? `<select class="proposta-item-mp" data-index="${index}">
+            <option value="" ${!item.cadServicoId ? 'selected' : ''} disabled>Selecione o serviço</option>
+            ${cadServicos.map(s => `<option value="${escapeHTML(s.id)}" ${item.cadServicoId === s.id ? 'selected' : ''}>${escapeHTML(s.tipo || '')}</option>`).join('')}
+           </select>`
+        : `<select class="proposta-item-mp" data-index="${index}">
             <option value="" ${!item.mpId ? 'selected' : ''} disabled>Selecione a MP</option>
             ${mpList.map(mp => `<option value="${escapeHTML(mp.id)}" ${item.mpId === mp.id ? 'selected' : ''}>${escapeHTML(mp.tipo || '')}</option>`).join('')}
-          </select>
-        </td>
+           </select>`;
+      tr.innerHTML = `
+        <td>${dropdownHtml}</td>
         <td><input type="text" class="proposta-item-descricao" data-index="${index}" value="${escapeHTML(item.descricao || '')}" readonly></td>
         <td><input type="text" class="proposta-item-unidade" data-index="${index}" value="${escapeHTML(item.unidade || '')}" readonly></td>
         <td><input type="number" class="proposta-item-preco-base" data-index="${index}" value="${Number(item.precoBase || 0).toFixed(2)}" step="0.01" min="0" readonly></td>
@@ -422,17 +466,30 @@ document.addEventListener('DOMContentLoaded', function () {
     tbody.querySelectorAll('.proposta-item-mp').forEach(select => {
       select.addEventListener('change', (e) => {
         const index = Number(e.target.dataset.index);
-        const mp = mpList.find(x => x.id === e.target.value) || {};
         const itemAtual = propostaItens[index] || {};
-        propostaItens[index] = normalizarItemProposta({
-          ...itemAtual,
-          mpId: mp.id || '',
-          descricao: mp.tipo || '',
-          unidade: mp.unidade || '',
-          precoBase: Number(mp.preco || 0),
-          quantidade: Number(itemAtual.quantidade || 0) > 0 ? itemAtual.quantidade : 1,
-          precoUnitario: Number(itemAtual.precoUnitario || 0) > 0 ? itemAtual.precoUnitario : Number(mp.preco || 0)
-        }, index);
+        if(propostaTipo === 'servico'){
+          const svc = cadServicos.find(x => x.id === e.target.value) || {};
+          propostaItens[index] = normalizarItemPropostaServico({
+            ...itemAtual,
+            cadServicoId: svc.id || '',
+            descricao: svc.tipo || '',
+            unidade: svc.unidade || '',
+            precoBase: Number(svc.valor || 0),
+            quantidade: Number(itemAtual.quantidade || 0) > 0 ? itemAtual.quantidade : 1,
+            precoUnitario: Number(itemAtual.precoUnitario || 0) > 0 ? itemAtual.precoUnitario : Number(svc.valor || 0)
+          }, index);
+        } else {
+          const mp = mpList.find(x => x.id === e.target.value) || {};
+          propostaItens[index] = normalizarItemProposta({
+            ...itemAtual,
+            mpId: mp.id || '',
+            descricao: mp.tipo || '',
+            unidade: mp.unidade || '',
+            precoBase: Number(mp.preco || 0),
+            quantidade: Number(itemAtual.quantidade || 0) > 0 ? itemAtual.quantidade : 1,
+            precoUnitario: Number(itemAtual.precoUnitario || 0) > 0 ? itemAtual.precoUnitario : Number(mp.preco || 0)
+          }, index);
+        }
         renderTabelaItensProposta();
       });
     });
@@ -455,7 +512,10 @@ document.addEventListener('DOMContentLoaded', function () {
     atualizarTotaisProposta();
   }
   function adicionarItemProposta(){
-    propostaItens.push(normalizarItemProposta({ quantidade: 1, precoUnitario: 0 }, propostaItens.length));
+    const novo = propostaTipo === 'servico'
+      ? normalizarItemPropostaServico({ quantidade: 1, precoUnitario: 0 }, propostaItens.length)
+      : normalizarItemProposta({ quantidade: 1, precoUnitario: 0 }, propostaItens.length);
+    propostaItens.push(novo);
     renderTabelaItensProposta();
   }
   function resetFormProposta(){
@@ -471,6 +531,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if(dataEl) dataEl.value = formatDateToISO(new Date());
     const dadosBancariosEl = document.getElementById('propostaDadosBancarios');
     if(dadosBancariosEl) dadosBancariosEl.value = `NOME: CXPTEC ENGENHARIA\nESPEC.TECNOLOGIA DO CONCRETO;\nCNPJ: 61.785.230/0001-06 (PIX)`;
+    propostaTipo = 'produto';
+    atualizarBotoesTipoProposta();
     propostaItens = [normalizarItemProposta({ quantidade: 1, precoUnitario: 0 }, 0)];
     preencherResumoClienteProposta('');
     renderTabelaItensProposta();
@@ -483,6 +545,18 @@ document.addEventListener('DOMContentLoaded', function () {
   resetFormProposta();
   document.getElementById('propostaCliente').addEventListener('change', (e) => preencherResumoClienteProposta(e.target.value));
   document.getElementById('btnAdicionarItemProposta').addEventListener('click', adicionarItemProposta);
+  document.getElementById('btnTipoProduto').addEventListener('click', function(){
+    propostaTipo = 'produto';
+    atualizarBotoesTipoProposta();
+    propostaItens = [normalizarItemProposta({ quantidade: 1, precoUnitario: 0 }, 0)];
+    renderTabelaItensProposta();
+  });
+  document.getElementById('btnTipoServico').addEventListener('click', function(){
+    propostaTipo = 'servico';
+    atualizarBotoesTipoProposta();
+    propostaItens = [normalizarItemPropostaServico({ quantidade: 1, precoUnitario: 0 }, 0)];
+    renderTabelaItensProposta();
+  });
 
   // ====== CONFIGURAÇÕES DA EMPRESA ======
   (function initEmpresaConfig(){
@@ -531,39 +605,36 @@ document.addEventListener('DOMContentLoaded', function () {
       const clienteId = document.getElementById('propostaCliente').value;
       const dataRaw = document.getElementById('propostaData').value;
       if(!clienteId) return M.toast({html:'Selecione o cliente da proposta!'});
-      const itensValidos = propostaItens.map((item, index) => normalizarItemProposta(item, index)).filter(item => item.mpId && item.quantidade > 0 && item.precoUnitario >= 0);
-      if(!itensValidos.length) return M.toast({html:'Adicione ao menos um item/MP com quantidade informada para salvar a proposta.'});
+      const isServico = propostaTipo === 'servico';
+      const itensValidos = isServico
+        ? propostaItens.map((item, index) => normalizarItemPropostaServico(item, index)).filter(item => item.cadServicoId && item.quantidade > 0 && item.precoUnitario >= 0)
+        : propostaItens.map((item, index) => normalizarItemProposta(item, index)).filter(item => item.mpId && item.quantidade > 0 && item.precoUnitario >= 0);
+      if(!itensValidos.length) return M.toast({html: isServico ? 'Adicione ao menos um serviço com quantidade informada para salvar a proposta.' : 'Adicione ao menos um item/MP com quantidade informada para salvar a proposta.'});
       propostaItens = itensValidos;
       const total = atualizarTotaisProposta();
       if(total <= 0) return M.toast({html:'Defina preços e quantidades maiores que zero para gerar o total da proposta.'});
       const dataProposta = dataRaw ? formatDateToDDMMYYYY(parseDateInputAsLocal(dataRaw)) : formatDateToDDMMYYYY(new Date());
+      const itensSalvar = isServico
+        ? itensValidos.map((item, index) => {
+            const svc = cadServicos.find(x => x.id === item.cadServicoId) || {};
+            const normalizado = normalizarItemPropostaServico({ ...item, descricao: svc.tipo || item.descricao, unidade: svc.unidade || item.unidade, precoBase: Number(svc.valor || item.precoBase || 0) }, index);
+            return { id: normalizado.id, cadServicoId: normalizado.cadServicoId, descricao: normalizado.descricao, unidade: normalizado.unidade, precoBase: Number(normalizado.precoBase || 0), quantidade: Number(normalizado.quantidade || 0), precoUnitario: Number(normalizado.precoUnitario || 0), total: Number(normalizado.total || 0) };
+          })
+        : itensValidos.map((item, index) => {
+            const mp = mpList.find(x => x.id === item.mpId) || {};
+            const normalizado = normalizarItemProposta({ ...item, descricao: mp.tipo || item.descricao, unidade: mp.unidade || item.unidade, precoBase: Number(mp.preco || item.precoBase || 0) }, index);
+            return { id: normalizado.id, mpId: normalizado.mpId, descricao: normalizado.descricao, unidade: normalizado.unidade, precoBase: Number(normalizado.precoBase || 0), quantidade: Number(normalizado.quantidade || 0), precoUnitario: Number(normalizado.precoUnitario || 0), total: Number(normalizado.total || 0) };
+          });
       const obj = {
         clienteId,
+        tipo: propostaTipo,
         numero: (document.getElementById('propostaNumero').value || gerarNumeroProposta()).trim(),
         data: dataProposta,
         subtotal: total,
         total,
         titulo: (document.getElementById('propostaTitulo').value || 'Proposta Comercial').trim(),
         clienteSnapshot: criarSnapshotCliente(clienteId),
-        itens: itensValidos.map((item, index) => {
-          const mp = mpList.find(x => x.id === item.mpId) || {};
-          const normalizado = normalizarItemProposta({
-            ...item,
-            descricao: mp.tipo || item.descricao,
-            unidade: mp.unidade || item.unidade,
-            precoBase: Number(mp.preco || item.precoBase || 0)
-          }, index);
-          return {
-            id: normalizado.id,
-            mpId: normalizado.mpId,
-            descricao: normalizado.descricao,
-            unidade: normalizado.unidade,
-            precoBase: Number(normalizado.precoBase || 0),
-            quantidade: Number(normalizado.quantidade || 0),
-            precoUnitario: Number(normalizado.precoUnitario || 0),
-            total: Number(normalizado.total || 0)
-          };
-        }),
+        itens: itensSalvar,
         condicaoFrete: (document.getElementById('propostaCondicaoFrete').value || '').trim(),
         condicaoPagamento: (document.getElementById('propostaCondicaoPagamento').value || '').trim(),
         validadeDias: Number(document.getElementById('propostaValidade').value) || 30,
@@ -1078,7 +1149,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const c = clientes.find(x => x.id === p.clienteId) || {};
       const itensCount = Array.isArray(p.itens) ? p.itens.length : 0;
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${escapeHTML(p.numero || '')}</td><td>${escapeHTML(p.data || '')}</td><td>${escapeHTML((p.clienteSnapshot && p.clienteSnapshot.nome) || c.nome || '')}</td><td>${itensCount}</td><td>R$ ${formatCurrencyBR(p.total || 0)}</td><td>${escapeHTML(p.condicaoPagamento || '')}</td>`;
+      tr.innerHTML = `<td>${escapeHTML(p.numero || '')}</td><td>${escapeHTML(p.data || '')}</td><td>${escapeHTML((p.clienteSnapshot && p.clienteSnapshot.nome) || c.nome || '')}</td><td>${p.tipo === 'servico' ? 'Serviço' : 'Produto'}</td><td>${itensCount}</td><td>R$ ${formatCurrencyBR(p.total || 0)}</td><td>${escapeHTML(p.condicaoPagamento || '')}</td>`;
       const tdActions = document.createElement('td');
       const btnEdit = document.createElement('button'); btnEdit.className='btn-small orange small-action'; btnEdit.title='Editar proposta'; btnEdit.innerHTML='<span class="material-icons">edit</span>'; btnEdit.onclick=()=> window.editarProposta(p.id);
       const btnView = document.createElement('button'); btnView.className='btn-small blue small-action'; btnView.title='Visualizar/Imprimir'; btnView.innerHTML='<span class="material-icons">visibility</span>'; btnView.onclick=()=> window.visualizarProposta(p.id);
@@ -1103,7 +1174,10 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('propostaDadosBancarios').value = p.dadosBancarios || '';
     document.getElementById('propostaObservacoes').value = p.observacoes || '';
     document.getElementById('propostaAssinatura').value = p.assinatura || '';
-    propostaItens = Array.isArray(p.itens) && p.itens.length ? p.itens.map((item, index) => normalizarItemProposta(item, index)) : [normalizarItemProposta({ quantidade: 1, precoUnitario: 0 }, 0)];
+    propostaTipo = p.tipo === 'servico' ? 'servico' : 'produto';
+    atualizarBotoesTipoProposta();
+    const normalizarItem = propostaTipo === 'servico' ? normalizarItemPropostaServico : normalizarItemProposta;
+    propostaItens = Array.isArray(p.itens) && p.itens.length ? p.itens.map((item, index) => normalizarItem(item, index)) : [normalizarItem({ quantidade: 1, precoUnitario: 0 }, 0)];
     preencherResumoClienteProposta(p.clienteId || '');
     renderTabelaItensProposta();
     M.updateTextFields();
