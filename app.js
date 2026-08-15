@@ -1080,14 +1080,29 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ====== LOGICA DE RESUMO DO MÊS NO CALENDÁRIO ======
+  const brlCurrencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+  function formatCurrencyBRL(value){
+    return brlCurrencyFormatter.format(Number(value) || 0);
+  }
+
+  function getFinanceiroEventDate(mov){
+    let dataEvento = null;
+    if(mov.vencimento && typeof mov.vencimento === 'string' && mov.vencimento.includes('/')){ const d = parseDDMMYYYYToDate(mov.vencimento); if(d) dataEvento = d; }
+    if(!dataEvento && mov.dataLanc && typeof mov.dataLanc === 'string' && mov.dataLanc.includes('/')){ const d2 = parseDDMMYYYYToDate(mov.dataLanc); if(d2) dataEvento = d2; }
+    if(!dataEvento && mov.createdAt){
+      if(typeof mov.createdAt.toDate === 'function'){ const d3 = mov.createdAt.toDate(); if(d3 instanceof Date && !isNaN(d3.getTime())) dataEvento = d3; }
+      else if(mov.createdAt instanceof Date && !isNaN(mov.createdAt.getTime())) dataEvento = mov.createdAt;
+      else if(typeof mov.createdAt === 'string'){ const d4 = new Date(mov.createdAt); if(!isNaN(d4.getTime())) dataEvento = d4; }
+    }
+    return dataEvento;
+  }
+
   window.calcularResumoMes = function(month, year) {
     let totalEntrada = 0;
     let totalSaida = 0;
     let saldoMesAnterior = 0;
     financeiro.forEach(m => {
-      let dataEvento = null;
-      if(m.vencimento && typeof m.vencimento === 'string' && m.vencimento.includes('/')){ const d = parseDDMMYYYYToDate(m.vencimento); if(d) dataEvento = d; }
-      if(!dataEvento && m.dataLanc && typeof m.dataLanc === 'string' && m.dataLanc.includes('/')){ const d2 = parseDDMMYYYYToDate(m.dataLanc); if(d2) dataEvento = d2; }
+      const dataEvento = getFinanceiroEventDate(m);
       
       if (!dataEvento) return;
       const valor = Number(m.valor) || 0;
@@ -1106,9 +1121,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const elEntrada = document.getElementById('somaEntradasMes');
     const elSaida = document.getElementById('somaSaidasMes');
     const elCaixa = document.getElementById('saldoCaixaMes');
-    if(elEntrada) elEntrada.innerText = `R$ ${totalEntrada.toFixed(2).replace('.',',')}`;
-    if(elSaida) elSaida.innerText = `R$ ${totalSaida.toFixed(2).replace('.',',')}`;
-    if(elCaixa) elCaixa.innerText = `R$ ${saldoCaixaMes.toFixed(2).replace('.',',')}`;
+    if(elEntrada) elEntrada.innerText = formatCurrencyBRL(totalEntrada);
+    if(elSaida) elSaida.innerText = formatCurrencyBRL(totalSaida);
+    if(elCaixa) elCaixa.innerText = formatCurrencyBRL(saldoCaixaMes);
   };
 
   let financeiroCalendar = null;
@@ -1116,9 +1131,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const el = document.getElementById('financeiroCalendar');
     if(!el || !window.FullCalendar) return;
     const events = financeiro.map(m => {
-      let dataEvento = null;
-      if(m.vencimento && typeof m.vencimento === 'string' && m.vencimento.includes('/')){ const d = parseDDMMYYYYToDate(m.vencimento); if(d) dataEvento = d; }
-      if(!dataEvento && m.dataLanc && typeof m.dataLanc === 'string' && m.dataLanc.includes('/')){ const d2 = parseDDMMYYYYToDate(m.dataLanc); if(d2) dataEvento = d2; }
+      const dataEvento = getFinanceiroEventDate(m);
       if(!dataEvento) return null;
       const isEntrada = String(m.tipo).toLowerCase() === 'entrada';
       return { id: m.id, title: `${isEntrada ? 'Receita' : 'Despesa'} • ${m.desc || ''} • R$ ${Number(m.valor || 0).toFixed(2)}`, start: `${dataEvento.getFullYear()}-${String(dataEvento.getMonth()+1).padStart(2,'0')}-${String(dataEvento.getDate()).padStart(2,'0')}`, allDay: true, backgroundColor: isEntrada ? '#2e7d32' : '#c62828', borderColor: isEntrada ? '#2e7d32' : '#c62828', textColor: '#fff', extendedProps: { dataLanc: m.dataLanc || '', vencimento: m.vencimento || '', obs: m.obs || '' } };
