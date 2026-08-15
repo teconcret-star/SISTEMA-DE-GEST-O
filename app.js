@@ -118,23 +118,152 @@ document.addEventListener('DOMContentLoaded', function () {
     'sectionUsuarios': 'sectionUsuarios',
   };
 
-  function showTab(tabId){
-    document.querySelectorAll('.page-tab').forEach(el => el.classList.remove('active'));
-    const tab = document.getElementById(tabId);
-    if(tab) { tab.classList.add('active'); window.scrollTo(0, 0); }
+  const TAB_TITLES = {
+    'sectionDashboard': 'Dashboard',
+    'tab-clientes': 'Cadastro de Cliente',
+    'tab-produtos': 'Cadastro de Produto (MP)',
+    'tab-cadservico': 'Cadastro de Serviço',
+    'tab-pedidos': 'Pedidos',
+    'tab-servico': 'Prestação de Serviço',
+    'sectionPropostas': 'Proposta Comercial',
+    'tab-financeiro': 'Financeiro',
+    'sectionUsuarios': 'Gestão de Usuários',
+  };
+
+  const dashboardTab = document.getElementById('sectionDashboard');
+  const pageTabs = Array.from(document.querySelectorAll('.page-tab'));
+  const windowTabs = pageTabs.filter(tab => tab.id !== 'sectionDashboard');
+  const containerEl = document.querySelector('.container');
+  const dashboardIndex = containerEl && dashboardTab ? Array.from(containerEl.children).indexOf(dashboardTab) : -1;
+
+  const sectionWindowHost = document.createElement('div');
+  sectionWindowHost.id = 'sectionWindowHost';
+  sectionWindowHost.className = 'section-window-host';
+
+  const sectionWindow = document.createElement('section');
+  sectionWindow.id = 'sectionWindow';
+  sectionWindow.className = 'section-window';
+  sectionWindow.hidden = true;
+
+  const sectionWindowHeader = document.createElement('div');
+  sectionWindowHeader.className = 'section-window__header';
+
+  const sectionWindowTitle = document.createElement('strong');
+  sectionWindowTitle.id = 'sectionWindowTitle';
+  sectionWindowTitle.className = 'section-window__title';
+  sectionWindowTitle.textContent = 'Janela';
+
+  const sectionWindowActions = document.createElement('div');
+  sectionWindowActions.className = 'section-window__actions';
+
+  const btnWindowMaximize = document.createElement('button');
+  btnWindowMaximize.type = 'button';
+  btnWindowMaximize.id = 'btnWindowMaximize';
+  btnWindowMaximize.className = 'section-window__control';
+  btnWindowMaximize.title = 'Maximizar janela';
+  btnWindowMaximize.setAttribute('aria-label', 'Maximizar janela');
+  btnWindowMaximize.innerHTML = '<span class="material-icons">open_in_full</span>';
+
+  const btnWindowClose = document.createElement('button');
+  btnWindowClose.type = 'button';
+  btnWindowClose.id = 'btnWindowClose';
+  btnWindowClose.className = 'section-window__control';
+  btnWindowClose.title = 'Fechar janela';
+  btnWindowClose.setAttribute('aria-label', 'Fechar janela');
+  btnWindowClose.innerHTML = '<span class="material-icons">close</span>';
+
+  const sectionWindowBody = document.createElement('div');
+  sectionWindowBody.id = 'sectionWindowBody';
+  sectionWindowBody.className = 'section-window__body';
+
+  sectionWindowActions.appendChild(btnWindowMaximize);
+  sectionWindowActions.appendChild(btnWindowClose);
+  sectionWindowHeader.appendChild(sectionWindowTitle);
+  sectionWindowHeader.appendChild(sectionWindowActions);
+  sectionWindow.appendChild(sectionWindowHeader);
+  sectionWindow.appendChild(sectionWindowBody);
+  sectionWindowHost.appendChild(sectionWindow);
+
+  if(containerEl){
+    if(dashboardIndex >= 0 && containerEl.children[dashboardIndex + 1]){
+      containerEl.insertBefore(sectionWindowHost, containerEl.children[dashboardIndex + 1]);
+    } else {
+      containerEl.appendChild(sectionWindowHost);
+    }
+  }
+
+  windowTabs.forEach(tab => sectionWindowBody.appendChild(tab));
+
+  let currentWindowTabId = null;
+
+  function setMenuActive(tabId){
     document.querySelectorAll('#sideMenu li[data-target]').forEach(li => {
       const liTab = TARGET_TO_TAB[li.dataset.target] || li.dataset.target;
       li.classList.toggle('menu-active', liTab === tabId);
     });
   }
 
+  function closeSectionWindow(options = {}){
+    const { keepMenuState = false } = options;
+    if(currentWindowTabId){
+      const currentTab = document.getElementById(currentWindowTabId);
+      if(currentTab) currentTab.classList.remove('active');
+    }
+    currentWindowTabId = null;
+    sectionWindow.hidden = true;
+    sectionWindow.classList.remove('section-window--maximized');
+    btnWindowMaximize.innerHTML = '<span class="material-icons">open_in_full</span>';
+    btnWindowMaximize.title = 'Maximizar janela';
+    btnWindowMaximize.setAttribute('aria-label', 'Maximizar janela');
+    sectionWindowTitle.textContent = 'Janela';
+    if(dashboardTab) dashboardTab.classList.add('active');
+    if(!keepMenuState) setMenuActive('sectionDashboard');
+  }
+
+  function toggleSectionWindowMaximize(){
+    const maximized = sectionWindow.classList.toggle('section-window--maximized');
+    btnWindowMaximize.innerHTML = `<span class="material-icons">${maximized ? 'close_fullscreen' : 'open_in_full'}</span>`;
+    btnWindowMaximize.title = maximized ? 'Restaurar janela' : 'Maximizar janela';
+    btnWindowMaximize.setAttribute('aria-label', maximized ? 'Restaurar janela' : 'Maximizar janela');
+  }
+
+  function showTab(tabId){
+    if(tabId === 'sectionDashboard'){
+      closeSectionWindow({ keepMenuState: true });
+      if(dashboardTab) dashboardTab.classList.add('active');
+      setMenuActive('sectionDashboard');
+      window.scrollTo(0, 0);
+      return true;
+    }
+
+    const tab = document.getElementById(tabId);
+    if(!tab) return false;
+
+    if(currentWindowTabId && currentWindowTabId !== tabId){
+      M.toast({ html: 'Feche a janela atual antes de abrir outra seção.' });
+      return false;
+    }
+
+    if(dashboardTab) dashboardTab.classList.add('active');
+    windowTabs.forEach(el => { if(el.id !== tabId) el.classList.remove('active'); });
+    tab.classList.add('active');
+    currentWindowTabId = tabId;
+    sectionWindowTitle.textContent = TAB_TITLES[tabId] || 'Janela';
+    sectionWindow.hidden = false;
+    setMenuActive(tabId);
+    window.scrollTo(0, 0);
+    return true;
+  }
+
   sideMenu.querySelectorAll('li[data-target]').forEach(li=>{
     li.addEventListener('click', ()=>{
       const tabId = TARGET_TO_TAB[li.dataset.target] || li.dataset.target;
-      showTab(tabId);
-      closeMenu();
+      if(showTab(tabId)) closeMenu();
     });
   });
+
+  btnWindowClose.addEventListener('click', () => closeSectionWindow());
+  btnWindowMaximize.addEventListener('click', toggleSectionWindowMaximize);
 
   document.getElementById('buscarCEP').onclick = async function(){
     const cep = document.getElementById('clienteCEP').value.replace(/\D/g,'');

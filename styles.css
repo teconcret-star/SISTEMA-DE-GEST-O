@@ -267,6 +267,85 @@ input:focus, select:focus, textarea:focus { border-color: #3d5f7f !important; bo
 .page-tab.active { display: block; }
 #sideMenu li.menu-active { background: #bcd0e2 !important; border-color: #7f93a7; }
 
+.section-window-host {
+  position: relative;
+  z-index: 120;
+}
+
+.section-window {
+  position: fixed;
+  top: 74px;
+  left: 72px;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  background: #e2eaf2;
+  border: 1px solid #7f93a7;
+  box-shadow: 0 12px 28px rgba(7, 22, 39, 0.3);
+}
+
+.section-window[hidden] {
+  display: none !important;
+}
+
+.section-window__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: linear-gradient(#9cb3c8, #7f9ab3);
+  border-bottom: 1px solid #5f7890;
+  color: #081826;
+}
+
+.section-window__title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.section-window__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-window__control {
+  width: 34px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: linear-gradient(var(--sap-btn1), var(--sap-btn2));
+  border: 1px solid #7d91a4;
+  cursor: pointer;
+}
+
+.section-window__control .material-icons {
+  font-size: 18px;
+  color: #0e2b46;
+}
+
+.section-window__body {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+  background: linear-gradient(#d9e3ec, #ced9e3);
+}
+
+.section-window__body .page-tab.active {
+  display: block;
+}
+
+.section-window--maximized {
+  top: 42px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
 /* ===============================
    MOBILE (≤ 600 px)
    =============================== */
@@ -357,6 +436,32 @@ input:focus, select:focus, textarea:focus { border-color: #3d5f7f !important; bo
   .filter-col-label { font-size: 12px !important; }
   .filter-col-item { min-width: 120px; }
   .filter-global-item { flex: 2 1 100%; }
+
+  .section-window {
+    top: 56px;
+    left: 8px;
+    right: 8px;
+    bottom: 12px;
+  }
+
+  .section-window--maximized {
+    top: 48px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  .section-window__header {
+    padding: 8px 10px;
+  }
+
+  .section-window__title {
+    font-size: 13px;
+  }
+
+  .section-window__body {
+    padding: 8px;
+  }
 
   /* Summary cards — stack vertically on very small screens */
   .sap-summary-card { padding: 12px; }
