@@ -214,8 +214,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const obj = { tipo, valor, unidade, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
     try {
       if(id){ await collCadServico.doc(id).set(obj, { merge: true }); document.getElementById('cadServicoEditId').value = ''; document.getElementById('btnCancelarEditCadServico').style.display = 'none'; document.getElementById('btnSalvarCadServico').innerHTML = '<span class="material-icons left">save</span>Salvar Serviço'; M.toast({html:"Serviço atualizado!"}); }
-      else { obj.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await collCadServico.add(obj); M.toast({html:"Serviço cadastrado!"}); }
-      document.getElementById('formCadastroServico').reset(); M.updateTextFields();
+      else { obj.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await collCadServico.add(obj); document.getElementById('formCadastroServico').reset(); M.updateTextFields(); M.toast({html:"Serviço cadastrado!"}); }
     } catch(err){ showStatus('Erro ao salvar serviço.', true); }
   };
 
