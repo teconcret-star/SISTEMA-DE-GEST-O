@@ -252,6 +252,10 @@ input:focus, select:focus, textarea:focus { border-color: #3d5f7f !important; bo
 .sap-saida .value { color: #c62828; }
 .sap-caixa { background: linear-gradient(#e3f2fd, #bbdefb); border-color: #64b5f6; }
 .sap-caixa .value { color: #1565c0; }
+.sap-saldo-mes { background: linear-gradient(#f3e5f5, #e1bee7); border-color: #ba68c8; }
+.sap-saldo-mes .value { color: #6a1b9a; }
+.sap-saldo-mes-anterior { background: linear-gradient(#fff8e1, #ffecb3); border-color: #ffd54f; }
+.sap-saldo-mes-anterior .value { color: #e65100; }
 
 @media (max-width: 900px){
   body { font-size: 12px; }
