@@ -352,6 +352,14 @@
 
       <form id="formProposta" class="card-panel z-depth-1">
         <input type="hidden" id="propostaEditId" value="">
+        <input type="hidden" id="propostaTipo" value="produto">
+        <div class="row" style="margin-bottom:4px;">
+          <div class="col s12">
+            <span style="font-weight:600;font-size:14px;margin-right:12px;vertical-align:middle;">Tipo de proposta:</span>
+            <button type="button" id="btnTipoProduto" class="btn blue btn-small" style="margin-right:8px;"><span class="material-icons left" style="font-size:16px;">inventory_2</span>Produto</button>
+            <button type="button" id="btnTipoServico" class="btn grey btn-small"><span class="material-icons left" style="font-size:16px;">miscellaneous_services</span>Serviço</button>
+          </div>
+        </div>
         <div class="row">
           <div class="input-field col s12 m5"><select id="propostaCliente"><option value="" disabled selected>Selecione o cliente</option></select><label for="propostaCliente">Cliente</label></div>
           <div class="input-field col s6 m3"><input id="propostaData" type="date"><label for="propostaData" class="active">Data</label></div>
@@ -377,7 +385,7 @@
             <div class="proposal-items-toolbar">
               <div>
                 <strong>Itens da proposta</strong>
-                <p>Selecione MPs cadastradas, ajuste quantidade e preço unitário manualmente.</p>
+                <p id="propostaItensHint">Selecione MPs cadastradas, ajuste quantidade e preço unitário manualmente.</p>
               </div>
               <button type="button" id="btnAdicionarItemProposta" class="btn blue"><span class="material-icons left">add</span>Adicionar item</button>
             </div>
@@ -385,7 +393,7 @@
               <table id="propostaItensTable">
                 <thead>
                   <tr>
-                    <th>Item / MP</th>
+                    <th id="propostaThItem">Item / MP</th>
                     <th>Descrição</th>
                     <th>Unidade</th>
                     <th>Preço base</th>
@@ -432,7 +440,7 @@ CNPJ: 61.785.230/0001-06 (PIX)</textarea><label for="propostaDadosBancarios" cla
       <div class="section-h">Propostas Salvas</div>
       <div class="scroll-table">
         <table class="highlight responsive-table" id="propostasTable">
-          <thead><tr><th>Número</th><th>Data</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Condição de pagamento</th><th data-no-filter>Ações</th></tr></thead>
+          <thead><tr><th>Número</th><th>Data</th><th>Cliente</th><th>Tipo</th><th>Itens</th><th>Total</th><th>Condição de pagamento</th><th data-no-filter>Ações</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
