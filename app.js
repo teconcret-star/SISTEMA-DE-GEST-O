@@ -104,10 +104,34 @@ document.addEventListener('DOMContentLoaded', function () {
   function closeMenu(){ sideMenu.classList.remove('open'); menuOverlay.classList.remove('visible'); }
   sideTrigger.addEventListener('click', ()=> { if(sideMenu.classList.contains('open')) closeMenu(); else openMenu(); });
   menuOverlay.addEventListener('click', closeMenu);
+
+  const TARGET_TO_TAB = {
+    'sectionDashboard': 'sectionDashboard',
+    'formCliente': 'tab-clientes',
+    'formCadastroMP': 'tab-produtos',
+    'formCadastroServico': 'tab-cadservico',
+    'formPedidoSection': 'tab-pedidos',
+    'pedidosTable': 'tab-pedidos',
+    'formServico': 'tab-servico',
+    'sectionPropostas': 'sectionPropostas',
+    'financeiroTable': 'tab-financeiro',
+    'sectionUsuarios': 'sectionUsuarios',
+  };
+
+  function showTab(tabId){
+    document.querySelectorAll('.page-tab').forEach(el => el.classList.remove('active'));
+    const tab = document.getElementById(tabId);
+    if(tab) { tab.classList.add('active'); window.scrollTo(0, 0); }
+    document.querySelectorAll('#sideMenu li[data-target]').forEach(li => {
+      const liTab = TARGET_TO_TAB[li.dataset.target] || li.dataset.target;
+      li.classList.toggle('menu-active', liTab === tabId);
+    });
+  }
+
   sideMenu.querySelectorAll('li[data-target]').forEach(li=>{
     li.addEventListener('click', ()=>{
-      const tgt = document.getElementById(li.dataset.target);
-      if(tgt){ tgt.scrollIntoView({behavior:'smooth', block:'start'}); tgt.classList.add('highlight-target'); setTimeout(()=> tgt.classList.remove('highlight-target'), 1200); }
+      const tabId = TARGET_TO_TAB[li.dataset.target] || li.dataset.target;
+      showTab(tabId);
       closeMenu();
     });
   });
@@ -138,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       const user = await doLogin(username, password);
       if(!user){ errEl.textContent = 'Usuário ou senha inválidos!'; }
-      else { errEl.textContent = ''; currentUser = user; sessionStorage.setItem('currentUser', JSON.stringify(user)); hideLoginOverlay(); applyRoleUI(); setupUserManagement(); startRealtimeListeners(); }
+      else { errEl.textContent = ''; currentUser = user; sessionStorage.setItem('currentUser', JSON.stringify(user)); hideLoginOverlay(); applyRoleUI(); setupUserManagement(); startRealtimeListeners(); showTab('sectionDashboard'); }
     } catch(err){ errEl.textContent = 'Erro ao fazer login. Tente novamente.'; }
     btn.disabled = false; btn.innerHTML = '<span class="material-icons left">login</span>Entrar';
   };
@@ -152,6 +176,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('menuUsuarios').style.display = 'none';
     document.getElementById('navUserInfo').style.display = 'none';
     document.getElementById('btnLogout').style.display = 'none';
+    showTab('sectionDashboard');
     showLoginOverlay();
   };
 
@@ -165,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if(userDoc.exists && userDoc.data().username === parsed.username){
           currentUser = { id: userDoc.id, username: userDoc.data().username, role: userDoc.data().role };
           sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-          hideLoginOverlay(); applyRoleUI(); setupUserManagement(); startRealtimeListeners();
+          hideLoginOverlay(); applyRoleUI(); setupUserManagement(); startRealtimeListeners(); showTab('sectionDashboard');
         } else {
           sessionStorage.removeItem('currentUser');
         }
@@ -239,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('btnFinanceiro').textContent = 'Salvar Alterações';
     document.getElementById('btnCancelarFinanceiro').style.display = 'inline-block';
     M.updateTextFields();
-    document.getElementById('formFinanceiro').scrollIntoView({behavior:'smooth', block:'start'});
+    showTab('tab-financeiro');
   }
 
   async function registrarFinanceiro(desc, valor, tipo, chamadoPorPedido = false, vencStr = ""){
@@ -818,19 +843,19 @@ document.addEventListener('DOMContentLoaded', function () {
   window.editarCliente = function(id) {
     const c = clientes.find(x => x.id === id); if(!c) return;
     document.getElementById('clienteEditId').value = c.id; document.getElementById('clienteNome').value = c.nome || ''; document.getElementById('clienteDocTipo').value = c.docTipo || 'cpf'; document.getElementById('clienteDoc').value = c.doc || ''; document.getElementById('clienteTel').value = c.tel || ''; document.getElementById('clienteEmail').value = c.email || ''; document.getElementById('clienteCEP').value = c.cep || ''; document.getElementById('clienteEnd').value = c.endereco || ''; document.getElementById('clienteNum').value = c.numero || ''; document.getElementById('clienteComp').value = c.complemento || '';
-    M.updateTextFields(); M.FormSelect.init(document.getElementById('clienteDocTipo')); document.getElementById('formCliente').scrollIntoView({behavior:'smooth'});
+    M.updateTextFields(); M.FormSelect.init(document.getElementById('clienteDocTipo')); showTab('tab-clientes');
   };
 
   window.editarMP = function(id) {
     const m = mpList.find(x => x.id === id); if(!m) return;
     document.getElementById('mpEditId').value = m.id; document.getElementById('mpTipo').value = m.tipo || ''; document.getElementById('mpQtd').value = m.saldo || 0; document.getElementById('mpPreco').value = m.preco || 0; document.getElementById('mpUnidade').value = m.unidade || 'kg'; document.getElementById('mpEmbalagem').value = m.embalagem || '';
-    M.updateTextFields(); M.FormSelect.init(document.getElementById('mpUnidade')); document.getElementById('btnCancelarEditMP').style.display = 'inline-block'; document.getElementById('btnSalvarMP').innerHTML = '<span class="material-icons left">save</span>Atualizar'; document.getElementById('formCadastroMP').scrollIntoView({behavior:'smooth'});
+    M.updateTextFields(); M.FormSelect.init(document.getElementById('mpUnidade')); document.getElementById('btnCancelarEditMP').style.display = 'inline-block'; document.getElementById('btnSalvarMP').innerHTML = '<span class="material-icons left">save</span>Atualizar'; showTab('tab-produtos');
   };
 
   window.editarCadServico = function(id) {
     const s = cadServicos.find(x => x.id === id); if(!s) return;
     document.getElementById('cadServicoEditId').value = s.id; document.getElementById('cadServicoTipo').value = s.tipo || ''; document.getElementById('cadServicoValor').value = s.valor || ''; document.getElementById('cadServicoUnidade').value = s.unidade || '';
-    M.updateTextFields(); document.getElementById('btnCancelarEditCadServico').style.display = 'inline-flex'; document.getElementById('btnSalvarCadServico').innerHTML = '<span class="material-icons left">save</span>Atualizar'; document.getElementById('formCadastroServico').scrollIntoView({behavior:'smooth'});
+    M.updateTextFields(); document.getElementById('btnCancelarEditCadServico').style.display = 'inline-flex'; document.getElementById('btnSalvarCadServico').innerHTML = '<span class="material-icons left">save</span>Atualizar'; showTab('tab-cadservico');
   };
 
   window.editarPedido = function(id) {
@@ -840,7 +865,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('pedidoStatus').value = p.status || 'Pendente';
     const hv = document.getElementById('pedidoVencDate'); const vencSel = document.getElementById('pedidoVenc');
     if(p.vencimento === 'À vista') { vencSel.value = 'avista'; if(hv) hv.value = 'avista'; } else { vencSel.value = ''; if(p.vencimento){ const vparts = p.vencimento.split('/'); if(vparts.length===3 && hv) hv.value = `${vparts[2]}-${vparts[1].padStart(2,'0')}-${vparts[0].padStart(2,'0')}`; } }
-    M.updateTextFields(); M.FormSelect.init(document.querySelectorAll('#pedidoCliente, #pedidoProduto, #pedidoVenc, #pedidoStatus')); document.getElementById('btnCancelarEditPedido').style.display = 'inline-block'; document.getElementById('btnPedido').textContent = 'Atualizar Pedido'; document.getElementById('formPedidoSection').scrollIntoView({behavior:'smooth'});
+    M.updateTextFields(); M.FormSelect.init(document.querySelectorAll('#pedidoCliente, #pedidoProduto, #pedidoVenc, #pedidoStatus')); document.getElementById('btnCancelarEditPedido').style.display = 'inline-block'; document.getElementById('btnPedido').textContent = 'Atualizar Pedido'; showTab('tab-pedidos');
   };
 
   // ====== RENDERIZAÇÃO DAS TABELAS UI ======
@@ -1189,7 +1214,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const _pcInst2 = M.FormSelect.getInstance(document.getElementById('propostaCliente'));
     if(_pcInst2) _pcInst2.destroy();
     M.FormSelect.init(document.getElementById('propostaCliente'));
-    document.getElementById('sectionPropostas').scrollIntoView({behavior:'smooth', block:'start'});
+    showTab('sectionPropostas');
   };
 
   window.visualizarProposta = function(id){
