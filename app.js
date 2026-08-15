@@ -1083,21 +1083,32 @@ document.addEventListener('DOMContentLoaded', function () {
   window.calcularResumoMes = function(month, year) {
     let totalEntrada = 0;
     let totalSaida = 0;
+    let saldoMesAnterior = 0;
     financeiro.forEach(m => {
       let dataEvento = null;
       if(m.vencimento && typeof m.vencimento === 'string' && m.vencimento.includes('/')){ const d = parseDDMMYYYYToDate(m.vencimento); if(d) dataEvento = d; }
       if(!dataEvento && m.dataLanc && typeof m.dataLanc === 'string' && m.dataLanc.includes('/')){ const d2 = parseDDMMYYYYToDate(m.dataLanc); if(d2) dataEvento = d2; }
       
-      if (dataEvento && dataEvento.getMonth() === month && dataEvento.getFullYear() === year) {
-        const valor = Number(m.valor) || 0;
-        if(String(m.tipo).toLowerCase() === 'entrada') totalEntrada += valor;
+      if (!dataEvento) return;
+      const valor = Number(m.valor) || 0;
+      const isEntrada = String(m.tipo).toLowerCase() === 'entrada';
+      const mesEvento = dataEvento.getMonth();
+      const anoEvento = dataEvento.getFullYear();
+
+      if (mesEvento === month && anoEvento === year) {
+        if(isEntrada) totalEntrada += valor;
         else totalSaida += valor;
+      } else if (anoEvento < year || (anoEvento === year && mesEvento < month)) {
+        saldoMesAnterior += isEntrada ? valor : -valor;
       }
     });
+    const saldoCaixaMes = saldoMesAnterior + (totalEntrada - totalSaida);
     const elEntrada = document.getElementById('somaEntradasMes');
     const elSaida = document.getElementById('somaSaidasMes');
+    const elCaixa = document.getElementById('saldoCaixaMes');
     if(elEntrada) elEntrada.innerText = `R$ ${totalEntrada.toFixed(2).replace('.',',')}`;
     if(elSaida) elSaida.innerText = `R$ ${totalSaida.toFixed(2).replace('.',',')}`;
+    if(elCaixa) elCaixa.innerText = `R$ ${saldoCaixaMes.toFixed(2).replace('.',',')}`;
   };
 
   let financeiroCalendar = null;

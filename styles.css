@@ -250,6 +250,8 @@ input:focus, select:focus, textarea:focus { border-color: #3d5f7f !important; bo
 .sap-entrada .value { color: #2e7d32; }
 .sap-saida { background: linear-gradient(#ffebee, #ffcdd2); border-color: #e57373; }
 .sap-saida .value { color: #c62828; }
+.sap-caixa { background: linear-gradient(#e3f2fd, #bbdefb); border-color: #64b5f6; }
+.sap-caixa .value { color: #1565c0; }
 
 @media (max-width: 900px){
   body { font-size: 12px; }
