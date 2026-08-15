@@ -70,7 +70,7 @@
   <div class="container">
 
     <!-- ===== DASHBOARD ===== -->
-    <div id="sectionDashboard">
+    <div class="page-tab active" id="sectionDashboard">
       <div class="section-h">Dashboard — Análise Gráfica</div>
 
       <!-- Filtros -->
@@ -182,6 +182,7 @@
     </div>
     <!-- ===== FIM DASHBOARD ===== -->
 
+    <div class="page-tab" id="tab-clientes">
     <div class="section-h">Cadastro de Cliente</div>
     <form id="formCliente" class="card-panel z-depth-1">
       <input type="hidden" id="clienteEditId" value="">
@@ -212,8 +213,10 @@
         <thead><tr><th>Nome</th><th>Tipo</th><th>CPF/CNPJ</th><th>Tel</th><th>Email</th><th>CEP</th><th>Endereço</th><th>Nº</th><th>Compl.</th><th data-no-filter>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
-    </div>
+    </div><!-- end clientesTable scroll-table -->
+    </div><!-- end tab-clientes -->
 
+    <div class="page-tab" id="tab-produtos">
     <div class="section-h">Cadastro/Edição de MP</div>
     <form id="formCadastroMP" class="card-panel z-depth-1">
       <input type="hidden" id="mpEditId" value="">
@@ -238,8 +241,10 @@
         <thead><tr><th>Tipo</th><th>Saldo</th><th>Preço</th><th>Unidade</th><th>Embalagem</th><th data-no-filter>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
-    </div>
+    </div><!-- end mpTable scroll-table -->
+    </div><!-- end tab-produtos -->
 
+    <div class="page-tab" id="tab-cadservico">
     <div class="section-h">Cadastro de Serviço</div>
     <form id="formCadastroServico" class="card-panel z-depth-1">
       <input type="hidden" id="cadServicoEditId" value="">
@@ -262,8 +267,10 @@
         <thead><tr><th>Tipo de Serviço</th><th>Valor (R$)</th><th>Unidade</th><th data-no-filter>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
-    </div>
+    </div><!-- end cadServicosTable scroll-table -->
+    </div><!-- end tab-cadservico -->
 
+    <div class="page-tab" id="tab-pedidos">
     <div class="section-h">Novo Pedido</div>
     <form id="formPedidoSection" class="card-panel z-depth-1">
       <input type="hidden" id="pedidoEditId" value="">
@@ -301,8 +308,10 @@
         <thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>Produto</th><th>Kgs</th><th>Preço/kg</th><th>Custo</th><th>Data Pedido</th><th>Vencimento</th><th>Status</th><th data-no-filter>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
-    </div>
+    </div><!-- end pedidosTable scroll-table -->
+    </div><!-- end tab-pedidos -->
 
+    <div class="page-tab" id="tab-servico">
     <div class="section-h">Prestação de Serviço</div>
     <form id="formServico" class="card-panel z-depth-1">
       <input type="hidden" id="servicoEditId" value="">
@@ -327,9 +336,10 @@
         <thead><tr><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Parcelas</th><th>Vencimentos</th><th data-no-filter>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
-    </div>
+    </div><!-- end servicosTable scroll-table -->
+    </div><!-- end tab-servico -->
 
-    <div id="sectionPropostas">
+    <div class="page-tab" id="sectionPropostas">
       <div class="section-h">Proposta Comercial</div>
 
       <div class="card-panel z-depth-1" id="empresaConfigPanel" style="margin-bottom:18px;">
@@ -444,8 +454,9 @@ CNPJ: 61.785.230/0001-06 (PIX)</textarea><label for="propostaDadosBancarios" cla
           <tbody></tbody>
         </table>
       </div>
-    </div>
+    </div><!-- end sectionPropostas page-tab -->
 
+    <div class="page-tab" id="tab-financeiro">
     <div class="section-h">Financeiro</div>
     <form id="formFinanceiro" class="card-panel z-depth-1">
       <input type="hidden" id="finEditId" value="">
@@ -495,8 +506,9 @@ CNPJ: 61.785.230/0001-06 (PIX)</textarea><label for="propostaDadosBancarios" cla
     <div style="margin-bottom:32px;">
       <input id="saldoAtual" readonly class="input-field center" style="width:180px;font-weight:bold;text-align:center;color:green;">
     </div>
+    </div><!-- end tab-financeiro -->
 
-    <div id="sectionUsuarios" style="display:none">
+    <div class="page-tab" id="sectionUsuarios">
       <div class="section-h">Gestão de Usuários</div>
       <form id="formUsuario" class="card-panel z-depth-1">
         <div class="row">
