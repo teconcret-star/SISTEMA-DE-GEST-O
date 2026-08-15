@@ -129,6 +129,7 @@ document.addEventListener('DOMContentLoaded', function () {
     'tab-financeiro': 'Financeiro',
     'sectionUsuarios': 'Gestão de Usuários',
   };
+  const DEFAULT_WINDOW_TITLE = 'Janela';
 
   const dashboardTab = document.getElementById('sectionDashboard');
   const pageTabs = Array.from(document.querySelectorAll('.page-tab'));
@@ -151,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const sectionWindowTitle = document.createElement('strong');
   sectionWindowTitle.id = 'sectionWindowTitle';
   sectionWindowTitle.className = 'section-window__title';
-  sectionWindowTitle.textContent = 'Janela';
+  sectionWindowTitle.textContent = DEFAULT_WINDOW_TITLE;
 
   const sectionWindowActions = document.createElement('div');
   sectionWindowActions.className = 'section-window__actions';
@@ -215,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function () {
     btnWindowMaximize.innerHTML = '<span class="material-icons">open_in_full</span>';
     btnWindowMaximize.title = 'Maximizar janela';
     btnWindowMaximize.setAttribute('aria-label', 'Maximizar janela');
-    sectionWindowTitle.textContent = 'Janela';
+    sectionWindowTitle.textContent = DEFAULT_WINDOW_TITLE;
     if(dashboardTab) dashboardTab.classList.add('active');
     if(!keepMenuState) setMenuActive('sectionDashboard');
   }
@@ -248,7 +249,7 @@ document.addEventListener('DOMContentLoaded', function () {
     windowTabs.forEach(el => { if(el.id !== tabId) el.classList.remove('active'); });
     tab.classList.add('active');
     currentWindowTabId = tabId;
-    sectionWindowTitle.textContent = TAB_TITLES[tabId] || 'Janela';
+    sectionWindowTitle.textContent = TAB_TITLES[tabId] || DEFAULT_WINDOW_TITLE;
     sectionWindow.hidden = false;
     setMenuActive(tabId);
     window.scrollTo(0, 0);
