@@ -546,12 +546,18 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('propostaCliente').addEventListener('change', (e) => preencherResumoClienteProposta(e.target.value));
   document.getElementById('btnAdicionarItemProposta').addEventListener('click', adicionarItemProposta);
   document.getElementById('btnTipoProduto').addEventListener('click', function(){
+    if(propostaTipo === 'produto') return;
+    const temItens = propostaItens.some(item => item.cadServicoId || item.mpId);
+    if(temItens && !confirm('Ao trocar para Produto, os itens atuais serão removidos. Continuar?')) return;
     propostaTipo = 'produto';
     atualizarBotoesTipoProposta();
     propostaItens = [normalizarItemProposta({ quantidade: 1, precoUnitario: 0 }, 0)];
     renderTabelaItensProposta();
   });
   document.getElementById('btnTipoServico').addEventListener('click', function(){
+    if(propostaTipo === 'servico') return;
+    const temItens = propostaItens.some(item => item.cadServicoId || item.mpId);
+    if(temItens && !confirm('Ao trocar para Serviço, os itens atuais serão removidos. Continuar?')) return;
     propostaTipo = 'servico';
     atualizarBotoesTipoProposta();
     propostaItens = [normalizarItemPropostaServico({ quantidade: 1, precoUnitario: 0 }, 0)];
@@ -616,8 +622,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const dataProposta = dataRaw ? formatDateToDDMMYYYY(parseDateInputAsLocal(dataRaw)) : formatDateToDDMMYYYY(new Date());
       const itensSalvar = isServico
         ? itensValidos.map((item, index) => {
-            const svc = cadServicos.find(x => x.id === item.cadServicoId) || {};
-            const normalizado = normalizarItemPropostaServico({ ...item, descricao: svc.tipo || item.descricao, unidade: svc.unidade || item.unidade, precoBase: Number(svc.valor || item.precoBase || 0) }, index);
+            const normalizado = normalizarItemPropostaServico(item, index);
             return { id: normalizado.id, cadServicoId: normalizado.cadServicoId, descricao: normalizado.descricao, unidade: normalizado.unidade, precoBase: Number(normalizado.precoBase || 0), quantidade: Number(normalizado.quantidade || 0), precoUnitario: Number(normalizado.precoUnitario || 0), total: Number(normalizado.total || 0) };
           })
         : itensValidos.map((item, index) => {
