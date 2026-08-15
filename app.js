@@ -176,7 +176,6 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('menuUsuarios').style.display = 'none';
     document.getElementById('navUserInfo').style.display = 'none';
     document.getElementById('btnLogout').style.display = 'none';
-    showTab('sectionDashboard');
     showLoginOverlay();
   };
 
