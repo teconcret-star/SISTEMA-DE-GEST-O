@@ -23,6 +23,7 @@ const collMP = db.collection('mpList');
 const collPedidos = db.collection('pedidos');
 const collFinanceiro = db.collection('financeiro');
 const collServicos = db.collection('servicos');
+const collCadServico = db.collection('cadServico');
 const collPropostas = db.collection('propostas');
 const collUsers = db.collection('users');
 
@@ -54,7 +55,7 @@ async function doLogin(username, password) {
   return { id: doc.id, username: doc.data().username, role: doc.data().role };
 }
 
-let clientes = []; let mpList = []; let pedidos = []; let financeiro = []; let servicos = []; let propostas = [];
+let clientes = []; let mpList = []; let pedidos = []; let financeiro = []; let servicos = []; let propostas = []; let cadServicos = [];
 
 let statusEl = document.getElementById('status');
 if (!statusEl) {
@@ -146,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function () {
     e.preventDefault();
     _unsubs.forEach(fn => fn()); _unsubs = [];
     currentUser = null; listenersStarted = false; sessionStorage.removeItem('currentUser');
-    clientes = []; mpList = []; pedidos = []; financeiro = []; servicos = []; propostas = [];
+    clientes = []; mpList = []; pedidos = []; financeiro = []; servicos = []; propostas = []; cadServicos = [];
     document.getElementById('sectionUsuarios').style.display = 'none';
     document.getElementById('menuUsuarios').style.display = 'none';
     document.getElementById('navUserInfo').style.display = 'none';
@@ -193,13 +194,33 @@ document.addEventListener('DOMContentLoaded', function () {
     const qtd = parseFloat(document.getElementById('mpQtd').value);
     const preco = parseFloat(document.getElementById('mpPreco').value);
     const unidade = document.getElementById('mpUnidade').value;
+    const embalagem = document.getElementById('mpEmbalagem').value.trim();
     if(!tipo || isNaN(qtd) || qtd < 0 || isNaN(preco) || preco <= 0 || !unidade) return M.toast({html:"Preencha todos os campos da MP!"});
-    const obj = { tipo, saldo: qtd, preco, unidade, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    const obj = { tipo, saldo: qtd, preco, unidade, embalagem, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
     try {
       if(id){ await collMP.doc(id).set(obj, { merge: true }); document.getElementById('mpEditId').value = ''; document.getElementById('btnCancelarEditMP').style.display = 'none'; document.getElementById('btnSalvarMP').innerHTML = '<span class="material-icons left">save</span>Salvar MP'; M.toast({html:"MP atualizada!"}); }
       else { obj.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await collMP.add(obj); document.getElementById('formCadastroMP').reset(); M.toast({html:"Matéria Prima salva!"}); }
       M.updateTextFields(); M.FormSelect.init(document.getElementById('mpUnidade'));
     } catch(err){ showStatus('Erro ao salvar MP.', true); }
+  };
+
+  document.getElementById('formCadastroServico').onsubmit = async function(e){
+    e.preventDefault();
+    const id = document.getElementById('cadServicoEditId').value || null;
+    const tipo = document.getElementById('cadServicoTipo').value.trim();
+    const valor = parseFloat(document.getElementById('cadServicoValor').value);
+    const unidade = document.getElementById('cadServicoUnidade').value.trim();
+    if(!tipo || isNaN(valor) || valor <= 0 || !unidade) return M.toast({html:"Preencha todos os campos do serviço!"});
+    const obj = { tipo, valor, unidade, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    try {
+      if(id){ await collCadServico.doc(id).set(obj, { merge: true }); document.getElementById('cadServicoEditId').value = ''; document.getElementById('btnCancelarEditCadServico').style.display = 'none'; document.getElementById('btnSalvarCadServico').innerHTML = '<span class="material-icons left">save</span>Salvar Serviço'; M.toast({html:"Serviço atualizado!"}); }
+      else { obj.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await collCadServico.add(obj); M.toast({html:"Serviço cadastrado!"}); }
+      document.getElementById('formCadastroServico').reset(); M.updateTextFields();
+    } catch(err){ showStatus('Erro ao salvar serviço.', true); }
+  };
+
+  document.getElementById('btnCancelarEditCadServico').onclick = function(){
+    document.getElementById('cadServicoEditId').value = ''; document.getElementById('formCadastroServico').reset(); document.getElementById('btnCancelarEditCadServico').style.display = 'none'; document.getElementById('btnSalvarCadServico').innerHTML = '<span class="material-icons left">save</span>Salvar Serviço'; M.updateTextFields();
   };
 
   const btnFin = document.getElementById('btnFinanceiro');
@@ -712,11 +733,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function reapplyAllFilters(){
     if(typeof window.applyColumnFilters === 'function'){
-      window.applyColumnFilters('clientesTable'); window.applyColumnFilters('mpTable'); window.applyColumnFilters('pedidosTable'); window.applyColumnFilters('financeiroTable'); window.applyColumnFilters('servicosTable'); window.applyColumnFilters('propostasTable');
+      window.applyColumnFilters('clientesTable'); window.applyColumnFilters('mpTable'); window.applyColumnFilters('pedidosTable'); window.applyColumnFilters('financeiroTable'); window.applyColumnFilters('servicosTable'); window.applyColumnFilters('propostasTable'); window.applyColumnFilters('cadServicosTable');
     }
   }
 
-  setupColumnFilters('clientesTable'); setupColumnFilters('mpTable'); setupColumnFilters('pedidosTable'); setupColumnFilters('financeiroTable'); setupColumnFilters('servicosTable'); setupColumnFilters('propostasTable');
+  setupColumnFilters('clientesTable'); setupColumnFilters('mpTable'); setupColumnFilters('pedidosTable'); setupColumnFilters('financeiroTable'); setupColumnFilters('servicosTable'); setupColumnFilters('propostasTable'); setupColumnFilters('cadServicosTable');
 
   // ====== EDIÇÃO GLOBAL (FORMS) ======
   window.editarCliente = function(id) {
@@ -727,8 +748,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   window.editarMP = function(id) {
     const m = mpList.find(x => x.id === id); if(!m) return;
-    document.getElementById('mpEditId').value = m.id; document.getElementById('mpTipo').value = m.tipo || ''; document.getElementById('mpQtd').value = m.saldo || 0; document.getElementById('mpPreco').value = m.preco || 0; document.getElementById('mpUnidade').value = m.unidade || 'kg';
+    document.getElementById('mpEditId').value = m.id; document.getElementById('mpTipo').value = m.tipo || ''; document.getElementById('mpQtd').value = m.saldo || 0; document.getElementById('mpPreco').value = m.preco || 0; document.getElementById('mpUnidade').value = m.unidade || 'kg'; document.getElementById('mpEmbalagem').value = m.embalagem || '';
     M.updateTextFields(); M.FormSelect.init(document.getElementById('mpUnidade')); document.getElementById('btnCancelarEditMP').style.display = 'inline-block'; document.getElementById('btnSalvarMP').innerHTML = '<span class="material-icons left">save</span>Atualizar'; document.getElementById('formCadastroMP').scrollIntoView({behavior:'smooth'});
+  };
+
+  window.editarCadServico = function(id) {
+    const s = cadServicos.find(x => x.id === id); if(!s) return;
+    document.getElementById('cadServicoEditId').value = s.id; document.getElementById('cadServicoTipo').value = s.tipo || ''; document.getElementById('cadServicoValor').value = s.valor || ''; document.getElementById('cadServicoUnidade').value = s.unidade || '';
+    M.updateTextFields(); document.getElementById('btnCancelarEditCadServico').style.display = 'inline-flex'; document.getElementById('btnSalvarCadServico').innerHTML = '<span class="material-icons left">save</span>Atualizar'; document.getElementById('formCadastroServico').scrollIntoView({behavior:'smooth'});
   };
 
   window.editarPedido = function(id) {
@@ -780,7 +807,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const tbody = document.querySelector('#mpTable tbody'); if(!tbody) return; tbody.innerHTML = "";
     mpList.forEach((mp) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td data-field="tipo">${escapeHTML(mp.tipo)}</td><td data-field="saldo">${mp.saldo}</td><td data-field="preco">${Number(mp.preco).toFixed(2)}</td><td data-field="unidade">${escapeHTML(mp.unidade)}</td>`;
+      tr.innerHTML = `<td data-field="tipo">${escapeHTML(mp.tipo)}</td><td data-field="saldo">${mp.saldo}</td><td data-field="preco">${Number(mp.preco).toFixed(2)}</td><td data-field="unidade">${escapeHTML(mp.unidade)}</td><td data-field="embalagem">${escapeHTML(mp.embalagem || '')}</td>`;
       const tdActions = document.createElement('td');
       const btnEdit = document.createElement('button'); btnEdit.className='btn-small orange small-action'; btnEdit.innerHTML='<span class="material-icons">edit</span>'; btnEdit.title='Editar Form'; btnEdit.onclick=()=> window.editarMP(mp.id);
       const btnInline = document.createElement('button'); btnInline.className='btn-small blue small-action'; btnInline.innerHTML='<span class="material-icons">edit_attributes</span>'; btnInline.title='Editar na Tabela'; btnInline.onclick=(e)=> window.editRow('mpList', mp.id, e.currentTarget);
@@ -789,6 +816,20 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     sincronizarItensPropostaComCadastro();
     renderTabelaItensProposta();
+    reapplyAllFilters();
+  }
+
+  function atualizarCadServicosUI(){
+    const tbody = document.querySelector('#cadServicosTable tbody'); if(!tbody) return; tbody.innerHTML = "";
+    cadServicos.forEach((s) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td data-field="tipo">${escapeHTML(s.tipo || '')}</td><td data-field="valor">${Number(s.valor || 0).toFixed(2)}</td><td data-field="unidade">${escapeHTML(s.unidade || '')}</td>`;
+      const tdActions = document.createElement('td');
+      const btnEdit = document.createElement('button'); btnEdit.className='btn-small orange small-action'; btnEdit.innerHTML='<span class="material-icons">edit</span>'; btnEdit.title='Editar'; btnEdit.onclick=()=> window.editarCadServico(s.id);
+      const btnInline = document.createElement('button'); btnInline.className='btn-small blue small-action'; btnInline.innerHTML='<span class="material-icons">edit_attributes</span>'; btnInline.title='Editar na Tabela'; btnInline.onclick=(e)=> window.editRow('cadServico', s.id, e.currentTarget);
+      const btnDel = document.createElement('button'); btnDel.className='btn-small red'; btnDel.innerHTML='<span class="material-icons">delete</span>'; btnDel.title='Excluir'; btnDel.onclick=()=> window.excluirCadServico(s.id);
+      tdActions.appendChild(btnEdit); tdActions.appendChild(btnInline); tdActions.appendChild(btnDel); tr.appendChild(tdActions); tbody.appendChild(tr);
+    });
     reapplyAllFilters();
   }
 
@@ -1231,6 +1272,7 @@ document.addEventListener('DOMContentLoaded', function () {
   window.excluirMP = async function(id){ if(confirm("Excluir MP?")) { await collMP.doc(id).delete(); M.toast({html:'Excluído!'}); } };
   window.excluirPedido = async function(id){ if(confirm("Excluir pedido?")) { await collPedidos.doc(id).delete(); M.toast({html:'Excluído!'}); } };
   window.excluirServico = async function(id){ if(confirm("Excluir serviço?")) { await collServicos.doc(id).delete(); M.toast({html:'Excluído!'}); } };
+  window.excluirCadServico = async function(id){ if(confirm("Excluir serviço cadastrado?")) { await collCadServico.doc(id).delete(); M.toast({html:'Excluído!'}); } };
   window.excluirProposta = async function(id){ if(confirm("Excluir proposta?")) { await collPropostas.doc(id).delete(); M.toast({html:'Excluído!'}); } };
   window.excluirFinanceiro = async function(id){ if(!id) return; if(confirm('Tem certeza que deseja excluir esta movimentação financeira?')){ try{ await collFinanceiro.doc(id).delete(); M.toast({ html: 'Movimentação excluída!' }); calcularSaldo(); }catch(err){ showStatus('Erro ao excluir', true); } } };
 
@@ -1243,7 +1285,7 @@ document.addEventListener('DOMContentLoaded', function () {
     tr.classList.add('editing-row'); tr._original = tr.innerHTML; const tds = tr.querySelectorAll('td');
     tds.forEach(td => {
       const field = td.getAttribute('data-field'); if(!field) return; const val = td.innerText; let input;
-      if(collectionName === 'clientes'){ if(field === 'docTipo'){ input = document.createElement('select'); const optCpf = document.createElement('option'); optCpf.value='cpf'; optCpf.text='CPF'; const optCnpj = document.createElement('option'); optCnpj.value='cnpj'; optCnpj.text='CNPJ'; input.appendChild(optCpf); input.appendChild(optCnpj); input.value = (val.toLowerCase().indexOf('cnpj')>-1) ? 'cnpj' : 'cpf'; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else if(collectionName === 'mpList'){ if(field === 'saldo' || field === 'preco'){ input = document.createElement('input'); input.type='number'; input.step = (field==='preco' ? '0.01' : '1'); input.value = val.replace(/[^\d\.\-]/g,'') || 0; } else if(field === 'unidade'){ input = document.createElement('select'); const o1 = document.createElement('option'); o1.value='kg'; o1.text='kg'; const o2 = document.createElement('option'); o2.value='unidade'; o2.text='unidade'; input.appendChild(o1); input.appendChild(o2); input.value = val; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else if(collectionName === 'pedidos'){ if(field === 'kg' || field === 'precoKg' || field === 'custo'){ input = document.createElement('input'); input.type='number'; input.step = (field==='precoKg' || field==='custo' ? '0.01' : '1'); input.value = val.replace(/[^\d\.\-]/g,'') || 0; } else if(field === 'cliente'){ input = document.createElement('select'); const placeholder = document.createElement('option'); placeholder.value=''; placeholder.text='-- Selecionar cliente --'; placeholder.disabled=true; input.appendChild(placeholder); clientes.forEach((c) => { const o = document.createElement('option'); o.value = c.id; o.text = `${c.nome} (${c.doc || ''})`; input.appendChild(o); }); const match = clientes.find(c=>c.nome === val); input.value = match ? match.id : ''; } else if(field === 'produto'){ input = document.createElement('select'); const opts = ["CURE FILM H","CURE FILM HC","HARDSURF H","HARDSURF HC"]; const placeholder = document.createElement('option'); placeholder.value=''; placeholder.text='-- Selecionar produto --'; placeholder.disabled=true; input.appendChild(placeholder); opts.forEach(pn => { const o = document.createElement('option'); o.value = pn; o.text = pn; input.appendChild(o); }); input.value = val || ''; } else if(field === 'dataPedido' || field === 'vencimento'){ input = document.createElement('input'); input.type='date'; const parts = val.split('/'); if(parts.length===3) input.value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`; } else if(field === 'status'){ input = document.createElement('select'); const o1 = document.createElement('option'); o1.value='Pendente'; o1.text='Pendente'; const o2 = document.createElement('option'); o2.value='Pago'; o2.text='Pago'; const o3 = document.createElement('option'); o3.value='Cancelado'; o3.text='Cancelado'; input.appendChild(o1); input.appendChild(o2); input.appendChild(o3); input.value = val || 'Pendente'; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else if(collectionName === 'financeiro'){ if(field === 'valor'){ input = document.createElement('input'); input.type='number'; input.step='0.01'; input.value = val.replace(/[^\d\.\-]/g,'') || 0; } else if(field === 'tipo'){ input = document.createElement('select'); const o1 = document.createElement('option'); o1.value='entrada'; o1.text='Receita'; const o2 = document.createElement('option'); o2.value='saida'; o2.text='Despesa'; input.appendChild(o1); input.appendChild(o2); const raw = String(val || '').toLowerCase().trim(); if(raw === 'receita' || raw === 'entrada') input.value = 'entrada'; else if(raw === 'despesa' || raw === 'saída' || raw === 'saida') input.value = 'saida'; else input.value = 'entrada'; } else if(field === 'dataLanc' || field === 'vencimento'){ input = document.createElement('input'); input.type='date'; const parts = val.split('/'); if(parts.length===3) input.value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else if(collectionName === 'servicos'){ if(field === 'cliente'){ input = document.createElement('select'); const placeholder = document.createElement('option'); placeholder.value=''; placeholder.text='-- Selecionar cliente --'; placeholder.disabled=true; input.appendChild(placeholder); clientes.forEach((c) => { const o = document.createElement('option'); o.value = c.id; o.text = `${c.nome} (${c.doc || ''})`; input.appendChild(o); }); const match = clientes.find(c=>c.nome === val); input.value = match ? match.id : ''; } else if(field === 'valor'){ input = document.createElement('input'); input.type='number'; input.step='0.01'; input.value = val.replace(/[^\d\.\-]/g,'') || 0; } else if(field === 'parcelas'){ input = document.createElement('input'); input.type='number'; input.value = val || 1; } else if(field === 'vencimentos'){ input = document.createElement('input'); input.type='text'; input.value = val; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else { input = document.createElement('input'); input.type='text'; input.value = val; }
+      if(collectionName === 'clientes'){ if(field === 'docTipo'){ input = document.createElement('select'); const optCpf = document.createElement('option'); optCpf.value='cpf'; optCpf.text='CPF'; const optCnpj = document.createElement('option'); optCnpj.value='cnpj'; optCnpj.text='CNPJ'; input.appendChild(optCpf); input.appendChild(optCnpj); input.value = (val.toLowerCase().indexOf('cnpj')>-1) ? 'cnpj' : 'cpf'; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else if(collectionName === 'mpList'){ if(field === 'saldo' || field === 'preco'){ input = document.createElement('input'); input.type='number'; input.step = (field==='preco' ? '0.01' : '1'); input.value = val.replace(/[^\d\.\-]/g,'') || 0; } else if(field === 'unidade'){ input = document.createElement('select'); const o1 = document.createElement('option'); o1.value='kg'; o1.text='kg'; const o2 = document.createElement('option'); o2.value='unidade'; o2.text='unidade'; input.appendChild(o1); input.appendChild(o2); input.value = val; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else if(collectionName === 'pedidos'){ if(field === 'kg' || field === 'precoKg' || field === 'custo'){ input = document.createElement('input'); input.type='number'; input.step = (field==='precoKg' || field==='custo' ? '0.01' : '1'); input.value = val.replace(/[^\d\.\-]/g,'') || 0; } else if(field === 'cliente'){ input = document.createElement('select'); const placeholder = document.createElement('option'); placeholder.value=''; placeholder.text='-- Selecionar cliente --'; placeholder.disabled=true; input.appendChild(placeholder); clientes.forEach((c) => { const o = document.createElement('option'); o.value = c.id; o.text = `${c.nome} (${c.doc || ''})`; input.appendChild(o); }); const match = clientes.find(c=>c.nome === val); input.value = match ? match.id : ''; } else if(field === 'produto'){ input = document.createElement('select'); const opts = ["CURE FILM H","CURE FILM HC","HARDSURF H","HARDSURF HC"]; const placeholder = document.createElement('option'); placeholder.value=''; placeholder.text='-- Selecionar produto --'; placeholder.disabled=true; input.appendChild(placeholder); opts.forEach(pn => { const o = document.createElement('option'); o.value = pn; o.text = pn; input.appendChild(o); }); input.value = val || ''; } else if(field === 'dataPedido' || field === 'vencimento'){ input = document.createElement('input'); input.type='date'; const parts = val.split('/'); if(parts.length===3) input.value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`; } else if(field === 'status'){ input = document.createElement('select'); const o1 = document.createElement('option'); o1.value='Pendente'; o1.text='Pendente'; const o2 = document.createElement('option'); o2.value='Pago'; o2.text='Pago'; const o3 = document.createElement('option'); o3.value='Cancelado'; o3.text='Cancelado'; input.appendChild(o1); input.appendChild(o2); input.appendChild(o3); input.value = val || 'Pendente'; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else if(collectionName === 'financeiro'){ if(field === 'valor'){ input = document.createElement('input'); input.type='number'; input.step='0.01'; input.value = val.replace(/[^\d\.\-]/g,'') || 0; } else if(field === 'tipo'){ input = document.createElement('select'); const o1 = document.createElement('option'); o1.value='entrada'; o1.text='Receita'; const o2 = document.createElement('option'); o2.value='saida'; o2.text='Despesa'; input.appendChild(o1); input.appendChild(o2); const raw = String(val || '').toLowerCase().trim(); if(raw === 'receita' || raw === 'entrada') input.value = 'entrada'; else if(raw === 'despesa' || raw === 'saída' || raw === 'saida') input.value = 'saida'; else input.value = 'entrada'; } else if(field === 'dataLanc' || field === 'vencimento'){ input = document.createElement('input'); input.type='date'; const parts = val.split('/'); if(parts.length===3) input.value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else if(collectionName === 'servicos'){ if(field === 'cliente'){ input = document.createElement('select'); const placeholder = document.createElement('option'); placeholder.value=''; placeholder.text='-- Selecionar cliente --'; placeholder.disabled=true; input.appendChild(placeholder); clientes.forEach((c) => { const o = document.createElement('option'); o.value = c.id; o.text = `${c.nome} (${c.doc || ''})`; input.appendChild(o); }); const match = clientes.find(c=>c.nome === val); input.value = match ? match.id : ''; } else if(field === 'valor'){ input = document.createElement('input'); input.type='number'; input.step='0.01'; input.value = val.replace(/[^\d\.\-]/g,'') || 0; } else if(field === 'parcelas'){ input = document.createElement('input'); input.type='number'; input.value = val || 1; } else if(field === 'vencimentos'){ input = document.createElement('input'); input.type='text'; input.value = val; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else if(collectionName === 'cadServico'){ if(field === 'valor'){ input = document.createElement('input'); input.type='number'; input.step='0.01'; input.value = val.replace(/[^\d\.\-]/g,'') || 0; } else { input = document.createElement('input'); input.type='text'; input.value = val; } } else { input = document.createElement('input'); input.type='text'; input.value = val; }
       td.innerHTML = ''; if(input.tagName.toLowerCase() === 'select'){ input.classList.add('browser-default'); } td.appendChild(input);
     });
     const actionsTd = tr.querySelector('td:last-child');
@@ -1257,7 +1299,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function cancelRowEdits(tr){
     tr.classList.remove('editing-row');
-    if(typeof atualizarClientesUI === 'function') atualizarClientesUI(); if(typeof atualizarMPCadastroUI === 'function') atualizarMPCadastroUI(); if(typeof atualizarPedidosUI === 'function') atualizarPedidosUI(); if(typeof atualizarFinanceiroUI === 'function') atualizarFinanceiroUI(); if(typeof atualizarServicosUI === 'function') atualizarServicosUI(); if(typeof atualizarPropostasUI === 'function') atualizarPropostasUI();
+    if(typeof atualizarClientesUI === 'function') atualizarClientesUI(); if(typeof atualizarMPCadastroUI === 'function') atualizarMPCadastroUI(); if(typeof atualizarPedidosUI === 'function') atualizarPedidosUI(); if(typeof atualizarFinanceiroUI === 'function') atualizarFinanceiroUI(); if(typeof atualizarServicosUI === 'function') atualizarServicosUI(); if(typeof atualizarCadServicosUI === 'function') atualizarCadServicosUI(); if(typeof atualizarPropostasUI === 'function') atualizarPropostasUI();
   }
 
   async function saveRowEdits(tr, collectionName, id){
@@ -1268,7 +1310,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const obj = {}; if(updated.nome !== undefined) obj.nome = String(updated.nome).trim(); if(updated.docTipo !== undefined) obj.docTipo = (String(updated.docTipo).toLowerCase() === 'cnpj' ? 'cnpj' : 'cpf'); if(updated.doc !== undefined) obj.doc = String(updated.doc).trim(); if(updated.tel !== undefined) obj.tel = String(updated.tel).trim(); if(updated.email !== undefined) obj.email = String(updated.email).trim(); if(updated.cep !== undefined) obj.cep = String(updated.cep).trim(); if(updated.endereco !== undefined) obj.endereco = String(updated.endereco).trim(); if(updated.numero !== undefined) obj.numero = String(updated.numero).trim(); if(updated.complemento !== undefined) obj.complemento = String(updated.complemento).trim(); obj.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
         await collClientes.doc(id).set(obj, { merge: true }); M.toast({html:'Cliente atualizado!'});
       } else if(collectionName === 'mpList'){
-        const obj = {}; if(updated.tipo !== undefined) obj.tipo = String(updated.tipo).trim(); if(updated.saldo !== undefined) obj.saldo = Number(updated.saldo) || 0; if(updated.preco !== undefined) obj.preco = Number(updated.preco) || 0; if(updated.unidade !== undefined) obj.unidade = String(updated.unidade).trim(); obj.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+        const obj = {}; if(updated.tipo !== undefined) obj.tipo = String(updated.tipo).trim(); if(updated.saldo !== undefined) obj.saldo = Number(updated.saldo) || 0; if(updated.preco !== undefined) obj.preco = Number(updated.preco) || 0; if(updated.unidade !== undefined) obj.unidade = String(updated.unidade).trim(); if(updated.embalagem !== undefined) obj.embalagem = String(updated.embalagem).trim(); obj.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
         await collMP.doc(id).set(obj, { merge: true }); M.toast({html:'MP atualizada!'});
       } else if(collectionName === 'pedidos'){
         const obj = {}; if(updated.cliente !== undefined) obj.clienteId = String(updated.cliente); if(updated.produto !== undefined) obj.produto = String(updated.produto).trim(); if(updated.kg !== undefined) obj.kg = Number(updated.kg) || 0; if(updated.precoKg !== undefined) obj.precoKg = Number(updated.precoKg) || 0; if(updated.custo !== undefined) obj.custo = Number(updated.custo) || 0; if(updated.dataPedido !== undefined) obj.dataPedido = String(updated.dataPedido).trim(); if(updated.vencimento !== undefined) obj.vencimento = String(updated.vencimento).trim(); if(updated.status !== undefined) obj.status = String(updated.status).trim(); obj.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
@@ -1279,6 +1321,9 @@ document.addEventListener('DOMContentLoaded', function () {
       } else if(collectionName === 'servicos'){
         const obj = {}; if(updated.cliente !== undefined) obj.clienteId = String(updated.cliente); if(updated.desc !== undefined) obj.desc = String(updated.desc).trim(); if(updated.valor !== undefined) obj.valor = Number(updated.valor) || 0; if(updated.parcelas !== undefined) obj.parcelas = Number(updated.parcelas) || 1; if(updated.vencimentos !== undefined) obj.vencimentos = String(updated.vencimentos).split(';').map(s=>s.trim()).filter(x=>x); obj.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
         await collServicos.doc(id).set(obj, { merge: true }); M.toast({html:'Serviço atualizado!'});
+      } else if(collectionName === 'cadServico'){
+        const obj = {}; if(updated.tipo !== undefined) obj.tipo = String(updated.tipo).trim(); if(updated.valor !== undefined) obj.valor = Number(updated.valor) || 0; if(updated.unidade !== undefined) obj.unidade = String(updated.unidade).trim(); obj.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+        await collCadServico.doc(id).set(obj, { merge: true }); M.toast({html:'Serviço atualizado!'});
       }
     } catch(err){ showStatus('Erro ao salvar edição.', true); }
     tr.classList.remove('editing-row');
@@ -1500,6 +1545,7 @@ document.addEventListener('DOMContentLoaded', function () {
     _unsubs.push(collPedidos.orderBy('createdAt').onSnapshot(snapshot => { pedidos = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarPedidosUI(); showStatus('Pedidos sincronizados.'); }, err => showStatus('Erro ao ouvir pedidos.', true)));
     _unsubs.push(collFinanceiro.orderBy('createdAt').onSnapshot(snapshot => { financeiro = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarFinanceiroUI(); calcularSaldo(); showStatus('Financeiro sincronizado.'); }, err => showStatus('Erro ao ouvir financeiro.', true)));
     _unsubs.push(collServicos.orderBy('createdAt').onSnapshot(snapshot => { servicos = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarServicosUI(); showStatus('Serviços sincronizados.'); }, err => showStatus('Erro ao ouvir serviços.', true)));
+    _unsubs.push(collCadServico.orderBy('createdAt').onSnapshot(snapshot => { cadServicos = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarCadServicosUI(); showStatus('Serviços cadastrados sincronizados.'); }, err => showStatus('Erro ao ouvir serviços cadastrados.', true)));
     _unsubs.push(collPropostas.orderBy('createdAt').onSnapshot(snapshot => { propostas = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); atualizarPropostasUI(); showStatus('Propostas sincronizadas.'); }, err => showStatus('Erro ao ouvir propostas.', true)));
   }
 

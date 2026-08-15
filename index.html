@@ -59,6 +59,7 @@
       <li data-target="formCliente"><span class="item-icon"><span class="material-icons">person</span></span><span>Cadastro de Cliente</span></li>
       <li data-target="formCadastroMP"><span class="item-icon"><span class="material-icons">category</span></span><span>Cadastro de Produto (MP)</span></li>
       <li data-target="formPedidoSection"><span class="item-icon"><span class="material-icons">post_add</span></span><span>Novo Pedido</span></li>
+      <li data-target="formCadastroServico"><span class="item-icon"><span class="material-icons">miscellaneous_services</span></span><span>Cadastro de Serviço</span></li>
       <li data-target="formServico"><span class="item-icon"><span class="material-icons">engineering</span></span><span>Prestação de Serviço</span></li>
       <li data-target="sectionPropostas"><span class="item-icon"><span class="material-icons">description</span></span><span>Proposta Comercial</span></li>
       <li data-target="financeiroTable"><span class="item-icon"><span class="material-icons">attach_money</span></span><span>Financeiro</span></li>
@@ -222,10 +223,11 @@
         <div class="input-field col s6 m4"><input id="mpPreco" type="number" min="0.01" step="0.01" required><label for="mpPreco">Preço</label></div>
       </div>
       <div class="row">
-        <div class="input-field col s8"><select id="mpUnidade"><option value="kg" selected>Custo/kg</option><option value="unidade">Custo/unidade</option></select><label for="mpUnidade">Tipo</label></div>
-        <div class="input-field col s4">
+        <div class="input-field col s12 m4"><select id="mpUnidade"><option value="kg" selected>Custo/kg</option><option value="unidade">Custo/unidade</option></select><label for="mpUnidade">Tipo</label></div>
+        <div class="input-field col s12 m4"><input id="mpEmbalagem" type="text"><label for="mpEmbalagem">Embalagem</label></div>
+        <div class="input-field col s12 m4">
           <button class="btn blue" type="submit" id="btnSalvarMP" style="width:100%"><span class="material-icons left">save</span>Salvar MP</button>
-          <button type="button" id="btnCancelarEditMP" class="btn grey" style="display:none;margin-left:8px;"><span class="material-icons left">close</span> Cancelar</button>
+          <button type="button" id="btnCancelarEditMP" class="btn grey" style="display:none;margin-top:8px;width:100%;"><span class="material-icons left">close</span> Cancelar</button>
         </div>
       </div>
     </form>
@@ -233,7 +235,31 @@
     <div class="section-h">MPs Tabela</div>
     <div class="scroll-table">
       <table class="highlight responsive-table" id="mpTable">
-        <thead><tr><th>Tipo</th><th>Saldo</th><th>Preço</th><th>Unidade</th><th data-no-filter>Ações</th></tr></thead>
+        <thead><tr><th>Tipo</th><th>Saldo</th><th>Preço</th><th>Unidade</th><th>Embalagem</th><th data-no-filter>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="section-h">Cadastro de Serviço</div>
+    <form id="formCadastroServico" class="card-panel z-depth-1">
+      <input type="hidden" id="cadServicoEditId" value="">
+      <div class="row">
+        <div class="input-field col s12 m4"><input id="cadServicoTipo" type="text" required><label for="cadServicoTipo">Tipo de Serviço</label></div>
+        <div class="input-field col s6 m4"><input id="cadServicoValor" type="number" min="0.01" step="0.01" required><label for="cadServicoValor">Valor (R$)</label></div>
+        <div class="input-field col s6 m4"><input id="cadServicoUnidade" type="text" required><label for="cadServicoUnidade">Unidade (ex: m², hora, un)</label></div>
+      </div>
+      <div class="row">
+        <div class="input-field col s12" style="display:flex;gap:8px;">
+          <button class="btn blue" type="submit" id="btnSalvarCadServico" style="flex:1"><span class="material-icons left">save</span>Salvar Serviço</button>
+          <button type="button" id="btnCancelarEditCadServico" class="btn grey" style="display:none;flex:1"><span class="material-icons left">close</span>Cancelar</button>
+        </div>
+      </div>
+    </form>
+
+    <div class="section-h">Serviços Cadastrados</div>
+    <div class="scroll-table">
+      <table class="highlight responsive-table" id="cadServicosTable">
+        <thead><tr><th>Tipo de Serviço</th><th>Valor (R$)</th><th>Unidade</th><th data-no-filter>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
